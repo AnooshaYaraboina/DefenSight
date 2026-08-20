@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "setup": "prisma migrate deploy && prisma generate && tsx scripts/seed.ts && npm run db:history",
-    "db:history": "tsx --conditions=react-server scripts/generate-history.ts"
+    "db:history": "tsx --conditions=react-server scripts/generate-history.ts",
+    "docs:tests": "tsx --conditions=react-server scripts/generate-test-matrix.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.9.1",
