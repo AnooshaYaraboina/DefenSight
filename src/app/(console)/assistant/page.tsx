@@ -1,5 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { trailingWindow } from "@/lib/queries/window";
 import { PageHeader } from "@/components/layout/page-header";
 import { isConfigured } from "@/lib/ai/provider";
 import { AssistantChat } from "@/components/security/assistant-chat";
@@ -11,7 +12,7 @@ export const metadata = { title: "AI Security Assistant" };
 
 export default async function AssistantPage() {
   const [events, incidents, quarantined, approvals] = await Promise.all([
-    prisma.securityEvent.count({ where: { createdAt: { gte: new Date(Date.now() - 24 * 3600_000) } } }),
+    prisma.securityEvent.count({ where: { createdAt: { gte: trailingWindow(1) } } }),
     prisma.incident.count({ where: { status: { in: ["OPEN", "INVESTIGATING"] } } }),
     prisma.document.count({ where: { quarantined: true } }),
     prisma.toolApproval.count({ where: { status: "PENDING" } }),
