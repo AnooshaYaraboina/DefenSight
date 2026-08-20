@@ -102,6 +102,8 @@ export interface ToolDefinitionContext {
   slug: string;
   name: string;
   category: string;
+  /** Used by the behaviour analyser to judge an action's relevance to intent. */
+  description: string;
   operations: string[];
   riskTier: number;
   requiresApproval: boolean;

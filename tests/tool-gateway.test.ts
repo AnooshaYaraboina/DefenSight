@@ -4,6 +4,7 @@ import type { AgentContext, ToolDefinitionContext } from "@/lib/engine/types";
 
 const sqlQuery: ToolDefinitionContext = {
   slug: "sql-query", name: "Warehouse Query", category: "DATABASE",
+  description: "Read-only SQL against the reporting warehouse",
   operations: ["READ"], riskTier: 3, requiresApproval: false,
   approvalThreshold: 70, rateLimitPerMinute: 40, enabled: true,
   parameterSchema: { type: "object", required: ["sql"],
@@ -12,12 +13,14 @@ const sqlQuery: ToolDefinitionContext = {
 };
 const sqlWrite: ToolDefinitionContext = {
   slug: "sql-write", name: "Warehouse Write", category: "DATABASE",
+  description: "Data-modifying statement against the warehouse",
   operations: ["WRITE", "DELETE"], riskTier: 5, requiresApproval: true,
   approvalThreshold: 40, rateLimitPerMinute: 5, enabled: true,
   parameterSchema: { type: "object", required: ["sql"], properties: { sql: { type: "string" } } },
 };
 const sendEmail: ToolDefinitionContext = {
   slug: "send-email", name: "Send Email", category: "EMAIL",
+  description: "Send an email outside the organisation",
   operations: ["EXECUTE"], riskTier: 5, requiresApproval: true,
   approvalThreshold: 35, rateLimitPerMinute: 10, enabled: true,
   allowedDomains: ["northwind.example"],
