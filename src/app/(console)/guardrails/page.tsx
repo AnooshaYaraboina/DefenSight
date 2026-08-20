@@ -2,7 +2,7 @@ import { ArrowDownToLine, ArrowUpFromLine, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { getGuardrails } from "@/lib/queries/defense";
 import { Card, CardContent } from "@/components/ui/card";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { GuardrailCard, type GuardrailRow } from "@/components/security/guardrail-card";
 import { SectionHeader } from "@/components/layout/page-header";
 
@@ -43,12 +43,28 @@ export default async function GuardrailsPage() {
         description="Configurable input and output controls over the detection engine. Changes take effect on the next request — the pipeline reads this configuration per request rather than caching it at boot."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Controls Configured" value={guardrails.length} />
-        <StatTile label="Input Controls" value={input.length} hint="Screen content before it reaches the model." />
-        <StatTile label="Output Controls" value={output.length} hint="Screen the response before it reaches the user." />
-        <StatTile label="Disabled" value={disabled} polarity="higher-is-worse" hint="Controls currently checking nothing." />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Controls Configured", value: guardrails.length },
+          {
+            label: "Input Controls",
+            value: input.length,
+            hint: "Screen content before it reaches the model.",
+          },
+          {
+            label: "Output Controls",
+            value: output.length,
+            hint: "Screen the response before it reaches the user.",
+          },
+          {
+            label: "Disabled",
+            value: disabled,
+            polarity: "higher-is-worse",
+            hint: "Controls currently checking nothing.",
+          },
+        ]}
+      />
 
       {disabled > 0 && (
         <Card className="mb-4 border-critical/35 bg-critical-dim/20">

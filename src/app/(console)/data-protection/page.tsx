@@ -5,7 +5,7 @@ import { getDataProtection } from "@/lib/queries/defense";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/states";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { BarList } from "@/components/charts/bar-charts";
 import { DecisionBadge, SeverityBadge } from "@/components/security/indicators";
 import { formatRelative } from "@/lib/utils/format";
@@ -38,12 +38,24 @@ export default async function DataProtectionPage() {
         description="Detection across every monitored channel — user input, retrieved context, tool arguments and model output. Each pattern pairs with a validator, because regex alone produces unusable precision on this problem."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Values Detected (7d)" value={data.totalValues} polarity="higher-is-worse" />
-        <StatTile label="Credential Exposures" value={credentialValues} polarity="higher-is-worse" hint="Zero tolerance — this control has no allow path." />
-        <StatTile label="Distinct Types" value={data.byType.length} />
-        <StatTile label="Detectors Configured" value={SENSITIVE_PATTERNS.length} hint="Each with its own validator and masking strategy." />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Values Detected (7d)", value: data.totalValues, polarity: "higher-is-worse" },
+          {
+            label: "Credential Exposures",
+            value: credentialValues,
+            polarity: "higher-is-worse",
+            hint: "Zero tolerance — this control has no allow path.",
+          },
+          { label: "Distinct Types", value: data.byType.length },
+          {
+            label: "Detectors Configured",
+            value: SENSITIVE_PATTERNS.length,
+            hint: "Each with its own validator and masking strategy.",
+          },
+        ]}
+      />
 
       <div className="mb-4 grid gap-3 lg:grid-cols-3">
         <Card className="p-4">

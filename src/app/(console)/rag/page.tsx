@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Meter } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { DocumentTable } from "@/components/security/document-table";
 import { DocumentUpload } from "@/components/security/document-upload";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -29,13 +29,39 @@ export default async function RagPage({
         actions={<DocumentUpload sources={sources.map((s) => ({ id: s.id, name: s.name }))} />}
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <StatTile label="Documents Indexed" value={stats.total} hint="Documents available to retrieval across all vector stores." />
-        <StatTile label="Quarantined" value={stats.quarantined} polarity="higher-is-worse" hint="Withheld from every retrieval after the scanner flagged them." />
-        <StatTile label="From External Sources" value={stats.externalDocuments} polarity="higher-is-worse" hint="Documents authored outside the organisation. The primary indirect-injection surface." />
-        <StatTile label="Retrievals Withheld" value={stats.withheldRetrievals} polarity="higher-is-worse" hint="Times a retrieval was blocked before reaching the model." />
-        <StatTile label="Total Retrievals" value={stats.totalRetrievals} hint="Document lookups evaluated by the pipeline." />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          {
+            label: "Documents Indexed",
+            value: stats.total,
+            hint: "Documents available to retrieval across all vector stores.",
+          },
+          {
+            label: "Quarantined",
+            value: stats.quarantined,
+            polarity: "higher-is-worse",
+            hint: "Withheld from every retrieval after the scanner flagged them.",
+          },
+          {
+            label: "From External Sources",
+            value: stats.externalDocuments,
+            polarity: "higher-is-worse",
+            hint: "Documents authored outside the organisation. The primary indirect-injection surface.",
+          },
+          {
+            label: "Retrievals Withheld",
+            value: stats.withheldRetrievals,
+            polarity: "higher-is-worse",
+            hint: "Times a retrieval was blocked before reaching the model.",
+          },
+          {
+            label: "Total Retrievals",
+            value: stats.totalRetrievals,
+            hint: "Document lookups evaluated by the pipeline.",
+          },
+        ]}
+      />
 
       <Tabs defaultValue="documents">
         <TabsList className="mb-4">

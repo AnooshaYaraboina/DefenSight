@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Meter } from "@/components/ui/progress";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { BarList } from "@/components/charts/bar-charts";
 import { RiskPill } from "@/components/security/risk-score";
 import {
@@ -55,13 +55,20 @@ export default async function ApplicationDetailPage({
         }
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <StatTile label="Security Score" value={app.securityScore} emphasis hint="Derived from blocked-request rate, critical activity and average risk." />
-        <StatTile label="Requests (7d)" value={app.stats.requests} />
-        <StatTile label="Threats" value={app.stats.threats} polarity="higher-is-worse" />
-        <StatTile label="Blocked" value={app.stats.blocked} polarity="higher-is-worse" />
-        <StatTile label="Average Risk" value={app.stats.avgRisk} polarity="higher-is-worse" />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          {
+            label: "Security Score",
+            value: app.securityScore,
+            hint: "Derived from blocked-request rate, critical activity and average risk.",
+          },
+          { label: "Requests (7d)", value: app.stats.requests },
+          { label: "Threats", value: app.stats.threats, polarity: "higher-is-worse" },
+          { label: "Blocked", value: app.stats.blocked, polarity: "higher-is-worse" },
+          { label: "Average Risk", value: app.stats.avgRisk, polarity: "higher-is-worse" },
+        ]}
+      />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-4">

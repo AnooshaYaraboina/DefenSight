@@ -26,7 +26,7 @@ export function LiveTicker({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-panel border border-line bg-surface",
+        "ds-panel overflow-hidden",
         className,
       )}
     >

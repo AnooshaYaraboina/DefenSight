@@ -3,7 +3,7 @@ import { Clock, Download } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { getAnalytics, RANGES } from "@/lib/queries/analytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { BarList, CompositionBar } from "@/components/charts/bar-charts";
 import { RangeSwitcher } from "@/components/security/range-switcher";
@@ -59,14 +59,21 @@ export default async function AnalyticsPage({
         className="mb-4"
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        <StatTile label="Requests" value={data.totals.requests} />
-        <StatTile label="Threats" value={data.totals.threats} polarity="higher-is-worse" />
-        <StatTile label="Blocked" value={data.totals.blocked} />
-        <StatTile label="Redacted" value={data.totals.redacted} />
-        <StatTile label="Incidents" value={data.totals.incidents} polarity="higher-is-worse" />
-        <StatTile label="Average Risk" value={Math.round(data.totals.avgRisk)} polarity="higher-is-worse" />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Requests", value: data.totals.requests },
+          { label: "Threats", value: data.totals.threats, polarity: "higher-is-worse" },
+          { label: "Blocked", value: data.totals.blocked },
+          { label: "Redacted", value: data.totals.redacted },
+          { label: "Incidents", value: data.totals.incidents, polarity: "higher-is-worse" },
+          {
+            label: "Average Risk",
+            value: Math.round(data.totals.avgRisk),
+            polarity: "higher-is-worse",
+          },
+        ]}
+      />
 
       <div className="grid gap-3 xl:grid-cols-3">
         <Card className="p-4 xl:col-span-2">

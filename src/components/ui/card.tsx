@@ -1,6 +1,14 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * The console's surface.
+ *
+ * `.ds-panel` carries the shared language — a barely-there top-to-bottom
+ * gradient and a 1px lit top edge that fades at both ends, so a panel reads as
+ * catching light from above rather than as a box drawn on the page. Every
+ * screen inherits it from here; nothing should hand-roll a bordered surface.
+ */
 export function Card({
   className,
   interactive,
@@ -9,9 +17,8 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-panel border border-line bg-surface",
-        interactive &&
-          "transition-colors duration-150 hover:border-line-strong hover:bg-surface-2 cursor-pointer",
+        "ds-panel",
+        interactive && "ds-panel-interactive cursor-pointer",
         className,
       )}
       {...props}
@@ -34,7 +41,7 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("text-sm font-semibold tracking-tight text-ink", className)}
+      className={cn("text-[13px] font-semibold tracking-tight text-ink", className)}
       {...props}
     />
   );

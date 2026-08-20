@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getRiskEngineData } from "@/lib/queries/defense";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Meter } from "@/components/ui/progress";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { OrdinalDistribution } from "@/components/charts/bar-charts";
 import { RISK_WEIGHTS } from "@/lib/engine/risk";
 import { severityFromRisk } from "@/lib/engine/taxonomy";
@@ -44,12 +44,27 @@ export default async function RiskPage() {
         description="Every relevant interaction is scored 0-100 from independent weighted signals. The score is explainable by construction: each factor's contribution is recorded, and they sum to the score an analyst sees."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Requests Scored (7d)" value={data.scored} />
-        <StatTile label="Average Score" value={Math.round(data.averageScore)} polarity="higher-is-worse" />
-        <StatTile label="Scoring Factors" value={Object.keys(RISK_WEIGHTS).length} hint="Independent signals combined into the score." />
-        <StatTile label="Factors Observed" value={data.factorStats.length} hint="Factors that actually contributed this week." />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Requests Scored (7d)", value: data.scored },
+          {
+            label: "Average Score",
+            value: Math.round(data.averageScore),
+            polarity: "higher-is-worse",
+          },
+          {
+            label: "Scoring Factors",
+            value: Object.keys(RISK_WEIGHTS).length,
+            hint: "Independent signals combined into the score.",
+          },
+          {
+            label: "Factors Observed",
+            value: data.factorStats.length,
+            hint: "Factors that actually contributed this week.",
+          },
+        ]}
+      />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card className="p-4">

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { ApprovalQueue } from "@/components/security/approval-queue";
 import { CompositionBar } from "@/components/charts/bar-charts";
 
@@ -41,12 +41,34 @@ export default async function ToolsPage() {
         description="Every tool invocation is authorised before it executes. The gateway defaults closed — a tool an agent was never granted is refused, however the request is framed."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Registered Tools" value={tools.length} hint="Capabilities available to agents, each with its own risk tier." />
-        <StatTile label="Calls Evaluated (7d)" value={totals.calls} hint="Tool requests that passed through the gateway." />
-        <StatTile label="Calls Refused" value={totals.blocked} polarity="higher-is-worse" hint="Requests the gateway denied before execution." />
-        <StatTile label="Awaiting Approval" value={approvals.length} polarity="higher-is-worse" hint="High-impact actions held for a named human." href="#approvals" />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          {
+            label: "Registered Tools",
+            value: tools.length,
+            hint: "Capabilities available to agents, each with its own risk tier.",
+          },
+          {
+            label: "Calls Evaluated (7d)",
+            value: totals.calls,
+            hint: "Tool requests that passed through the gateway.",
+          },
+          {
+            label: "Calls Refused",
+            value: totals.blocked,
+            polarity: "higher-is-worse",
+            hint: "Requests the gateway denied before execution.",
+          },
+          {
+            label: "Awaiting Approval",
+            value: approvals.length,
+            polarity: "higher-is-worse",
+            hint: "High-impact actions held for a named human.",
+            href: "#approvals",
+          },
+        ]}
+      />
 
       <Tabs defaultValue={approvals.length > 0 ? "approvals" : "catalogue"}>
         <TabsList className="mb-4">

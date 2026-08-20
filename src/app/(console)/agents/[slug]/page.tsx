@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Meter } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip } from "@/components/ui/tooltip";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { ToolCallList } from "@/components/security/tool-call-list";
 import { RiskPill } from "@/components/security/risk-score";
 import {
@@ -69,13 +69,25 @@ export default async function AgentDetailPage({
         }
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-        <StatTile label="Security Score" value={agent.securityScore} emphasis hint="Recomputed from this agent's observed behaviour." />
-        <StatTile label="Requests (7d)" value={agent.stats.requests} />
-        <StatTile label="Blocked" value={agent.stats.blocked} polarity="higher-is-worse" />
-        <StatTile label="Tool Calls" value={agent.stats.toolCalls} />
-        <StatTile label="Calls Denied" value={agent.stats.deniedCalls} polarity="higher-is-worse" hint="Refused by the gateway." />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          {
+            label: "Security Score",
+            value: agent.securityScore,
+            hint: "Recomputed from this agent's observed behaviour.",
+          },
+          { label: "Requests (7d)", value: agent.stats.requests },
+          { label: "Blocked", value: agent.stats.blocked, polarity: "higher-is-worse" },
+          { label: "Tool Calls", value: agent.stats.toolCalls },
+          {
+            label: "Calls Denied",
+            value: agent.stats.deniedCalls,
+            polarity: "higher-is-worse",
+            hint: "Refused by the gateway.",
+          },
+        ]}
+      />
 
       {overProvisioned.length > 0 && (
         <Card className="mb-4 border-medium/30 bg-medium-dim/15">

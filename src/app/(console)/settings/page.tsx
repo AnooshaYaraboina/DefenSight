@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/rbac/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TBody, TD, TH, THead, TR, TableWrap } from "@/components/ui/table";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { ClassificationBadge } from "@/components/security/indicators";
 import { RiskPill } from "@/components/security/risk-score";
 import { formatRelative } from "@/lib/utils/format";
@@ -35,12 +35,13 @@ export default async function SettingsPage() {
         description="Users, roles and platform configuration. Permissions are enforced server-side on every API route; the console hides controls a role cannot use purely as an affordance."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Users" value={users.length} />
-        {byRole.map((r) => (
-          <StatTile key={r.role} label={ROLE_META[r.role].label} value={r.count} />
-        ))}
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Users", value: users.length },
+          ...byRole.map((r) => ({ label: ROLE_META[r.role].label, value: r.count })),
+        ]}
+      />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-4">

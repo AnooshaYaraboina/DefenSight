@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Meter } from "@/components/ui/progress";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { BarList } from "@/components/charts/bar-charts";
 import { ThreatBadge } from "@/components/security/indicators";
 import { formatRelative } from "@/lib/utils/format";
@@ -77,12 +77,27 @@ export default async function DetectionsPage() {
         description="How threats are actually found. Five independent analysis layers, fused rather than stacked — a single detector is a lead, and confidence rises sharply only when methods that could not share a blind spot agree."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Detections (7d)" value={total} />
-        <StatTile label="Detectors Registered" value={DETECTORS.length + 3} hint="Content detectors plus behavioural, authorisation and obfuscation analysis." />
-        <StatTile label="Pattern Families" value={PATTERN_FAMILIES.length} hint="Weighted behaviour families in the lexical layer." />
-        <StatTile label="Multi-Layer Events" value={multiLayerEvents} hint="Events where more than one method agreed." />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Detections (7d)", value: total },
+          {
+            label: "Detectors Registered",
+            value: DETECTORS.length + 3,
+            hint: "Content detectors plus behavioural, authorisation and obfuscation analysis.",
+          },
+          {
+            label: "Pattern Families",
+            value: PATTERN_FAMILIES.length,
+            hint: "Weighted behaviour families in the lexical layer.",
+          },
+          {
+            label: "Multi-Layer Events",
+            value: multiLayerEvents,
+            hint: "Events where more than one method agreed.",
+          },
+        ]}
+      />
 
       <div className="mb-4 grid gap-3 lg:grid-cols-3">
         {Object.entries(LAYER_META).map(([layer, meta]) => {

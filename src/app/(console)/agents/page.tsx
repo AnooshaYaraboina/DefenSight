@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Meter } from "@/components/ui/progress";
 import { Tooltip } from "@/components/ui/tooltip";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { ClassificationBadge } from "@/components/security/indicators";
 import { formatRelative } from "@/lib/utils/format";
 
@@ -29,12 +29,34 @@ export default async function AgentsPage() {
         description="Every agent's permissions, behaviour and posture. An agent's grants define its blast radius if it is ever manipulated — so the grants matter as much as the guardrails."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Agents Monitored" value={agents.length} hint="Registered agents across all AI applications." />
-        <StatTile label="High-Risk Agents" value={highRisk} polarity="higher-is-worse" hint="Agents rated high or critical risk by observed behaviour." />
-        <StatTile label="Least-Privilege Findings" value={findings} polarity="higher-is-worse" hint="Granted permissions the agent has barely exercised — candidates for revocation." />
-        <StatTile label="Tool Calls Denied" value={denied} polarity="higher-is-worse" hint="Tool requests the gateway refused in the last 7 days." />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          {
+            label: "Agents Monitored",
+            value: agents.length,
+            hint: "Registered agents across all AI applications.",
+          },
+          {
+            label: "High-Risk Agents",
+            value: highRisk,
+            polarity: "higher-is-worse",
+            hint: "Agents rated high or critical risk by observed behaviour.",
+          },
+          {
+            label: "Least-Privilege Findings",
+            value: findings,
+            polarity: "higher-is-worse",
+            hint: "Granted permissions the agent has barely exercised — candidates for revocation.",
+          },
+          {
+            label: "Tool Calls Denied",
+            value: denied,
+            polarity: "higher-is-worse",
+            hint: "Tool requests the gateway refused in the last 7 days.",
+          },
+        ]}
+      />
 
       <div className="grid gap-3 lg:grid-cols-2">
         {agents.map((agent) => (

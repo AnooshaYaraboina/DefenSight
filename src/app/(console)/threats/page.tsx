@@ -5,7 +5,7 @@ import { getThreatCenter } from "@/lib/queries/defense";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/states";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { DecisionBadge, SeverityBar, ThreatBadge } from "@/components/security/indicators";
 import { RiskPill } from "@/components/security/risk-score";
 import { FamilyFilter } from "@/components/security/family-filter";
@@ -34,12 +34,20 @@ export default async function ThreatsPage({
         description="Every threat type the engine can identify, grouped by attack family, with the detection layers that found each one."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Threat Events (7d)" value={data.totals.events} polarity="higher-is-worse" />
-        <StatTile label="Blocked" value={data.totals.blocked} />
-        <StatTile label="Critical Severity" value={data.totals.critical} polarity="higher-is-worse" />
-        <StatTile label="Incidents Raised" value={data.totals.incidents} polarity="higher-is-worse" href="/incidents" />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Threat Events (7d)", value: data.totals.events, polarity: "higher-is-worse" },
+          { label: "Blocked", value: data.totals.blocked },
+          { label: "Critical Severity", value: data.totals.critical, polarity: "higher-is-worse" },
+          {
+            label: "Incidents Raised",
+            value: data.totals.incidents,
+            polarity: "higher-is-worse",
+            href: "/incidents",
+          },
+        ]}
+      />
 
       <FamilyFilter
         current={data.selected}

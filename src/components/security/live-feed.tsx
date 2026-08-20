@@ -86,7 +86,7 @@ export function LiveFeed({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-panel border border-line bg-surface">
+      <div className="ds-panel min-h-0 flex-1 overflow-y-auto">
         {rows.length === 0 ? (
           <EmptyState
             icon={Radio}

@@ -19,7 +19,7 @@ export default function ConsoleLoading() {
 
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-panel border border-line bg-surface p-3.5">
+          <div key={i} className="ds-panel p-3.5">
             <Skeleton className="h-2.5 w-20" />
             <Skeleton className="mt-3 h-6 w-14" />
             <Skeleton className="mt-3 h-2 w-24" />

@@ -11,7 +11,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
 /** Table-shaped loading state so layout does not jump when data lands. */
 export function TableSkeleton({ rows = 8, cols = 6 }: { rows?: number; cols?: number }) {
   return (
-    <div className="divide-y divide-line rounded-panel border border-line">
+    <div className="ds-panel divide-y divide-line">
       <div className="flex gap-3 bg-surface-2 px-3 py-2">
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton key={i} className="h-3 flex-1" />

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 export function TableWrap({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("relative w-full overflow-auto rounded-panel border border-line", className)}
+      className={cn("ds-panel relative w-full overflow-auto", className)}
       {...props}
     />
   );

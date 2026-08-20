@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { prisma } from "@/lib/db";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { AlertList, type AlertRow } from "@/components/security/alert-list";
 
 export const dynamic = "force-dynamic";
@@ -27,12 +27,19 @@ export default async function AlertsPage() {
         description="Raised automatically when the engine confirms a high or critical threat. New alerts arrive over the same live stream the monitor uses."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Total Alerts" value={alerts.length} />
-        <StatTile label="Unacknowledged" value={unacknowledged} polarity="higher-is-worse" />
-        <StatTile label="Critical Outstanding" value={critical} polarity="higher-is-worse" />
-        <StatTile label="Acknowledged" value={alerts.length - unacknowledged} polarity="higher-is-better" />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Total Alerts", value: alerts.length },
+          { label: "Unacknowledged", value: unacknowledged, polarity: "higher-is-worse" },
+          { label: "Critical Outstanding", value: critical, polarity: "higher-is-worse" },
+          {
+            label: "Acknowledged",
+            value: alerts.length - unacknowledged,
+            polarity: "higher-is-better",
+          },
+        ]}
+      />
 
       <AlertList alerts={alerts as AlertRow[]} />
     </>

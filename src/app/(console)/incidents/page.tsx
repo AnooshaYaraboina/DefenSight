@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/states";
 import { IncidentStatusBadge, SeverityBadge, ThreatBadge } from "@/components/security/indicators";
 import { AttackChainStrip } from "@/components/security/attack-chain";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { StatusFilter } from "@/components/security/status-filter";
 import { formatRelative } from "@/lib/utils/format";
 import { INCIDENT_STATUSES, INCIDENT_STATUS_META } from "@/lib/engine/taxonomy";
@@ -31,21 +32,14 @@ export default async function IncidentsPage({
         description="Critical threats open a case automatically, seeded with the attack chain the pipeline recorded. Investigate, contain, resolve."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {INCIDENT_STATUSES.map((status) => (
-          <Card key={status} className="p-3.5">
-            <p className="text-[11px] font-medium text-ink-3">
-              {INCIDENT_STATUS_META[status].label}
-            </p>
-            <p className="mt-2 font-mono text-2xl font-semibold tabular text-ink">
-              {counts[status] ?? 0}
-            </p>
-            <p className="mt-1.5 text-[10px] leading-snug text-ink-4">
-              {INCIDENT_STATUS_META[status].description}
-            </p>
-          </Card>
-        ))}
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={INCIDENT_STATUSES.map((status) => ({
+          label: INCIDENT_STATUS_META[status].label,
+          value: counts[status] ?? 0,
+          note: INCIDENT_STATUS_META[status].description,
+        }))}
+      />
 
       <StatusFilter
         current={params.status}

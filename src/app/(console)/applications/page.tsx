@@ -5,7 +5,7 @@ import { getApplications } from "@/lib/queries/estate";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Meter } from "@/components/ui/progress";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { RiskPill } from "@/components/security/risk-score";
 import { formatRelative } from "@/lib/utils/format";
 
@@ -33,12 +33,24 @@ export default async function ApplicationsPage() {
         description="Every AI application registered for monitoring, with its posture derived from observed behaviour rather than declared configuration."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Applications" value={apps.length} hint="Registered and monitored." />
-        <StatTile label="Agents Deployed" value={totals.agents} hint="Across all applications." />
-        <StatTile label="Requests (7d)" value={totals.requests} hint="Requests evaluated by the pipeline this week." />
-        <StatTile label="Open Incidents" value={totals.open} polarity="higher-is-worse" hint="Cases still open or under investigation across these applications." />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Applications", value: apps.length, hint: "Registered and monitored." },
+          { label: "Agents Deployed", value: totals.agents, hint: "Across all applications." },
+          {
+            label: "Requests (7d)",
+            value: totals.requests,
+            hint: "Requests evaluated by the pipeline this week.",
+          },
+          {
+            label: "Open Incidents",
+            value: totals.open,
+            polarity: "higher-is-worse",
+            hint: "Cases still open or under investigation across these applications.",
+          },
+        ]}
+      />
 
       <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
         {apps.map((app) => (

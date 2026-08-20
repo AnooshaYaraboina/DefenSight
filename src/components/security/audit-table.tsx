@@ -126,7 +126,12 @@ export function AuditTable({
         <span className="ml-auto font-mono text-[11px] text-ink-4">{logs.length} shown</span>
       </div>
 
-      <ol className={cn("space-y-1", pending && "opacity-60 transition-opacity")}>
+      <ol
+        className={cn(
+          "ds-panel divide-y divide-line overflow-hidden",
+          pending && "opacity-60 transition-opacity",
+        )}
+      >
         {logs.map((log) => {
           const isOpen = expanded === log.id;
           // `metadata` is a Json column, so it arrives as `unknown`; `&&` on it
@@ -137,10 +142,8 @@ export function AuditTable({
             <li
               key={log.id}
               className={cn(
-                "overflow-hidden rounded-md border transition-colors",
-                log.outcome === "FAILURE"
-                  ? "border-critical/25 bg-critical-dim/10"
-                  : "border-line bg-surface",
+                "transition-colors",
+                log.outcome === "FAILURE" && "bg-critical-dim/10",
               )}
             >
               <button

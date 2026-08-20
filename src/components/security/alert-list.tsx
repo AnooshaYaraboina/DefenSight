@@ -83,7 +83,7 @@ export function AlertList({ alerts }: { alerts: AlertRow[] }) {
       )}
 
       {unacknowledged.length > 0 && (
-        <div className="flex items-center justify-between gap-3 rounded-panel border border-line bg-surface px-4 py-2.5">
+        <div className="ds-panel flex items-center justify-between gap-3 px-4 py-2.5">
           <span className="text-[11px] text-ink-3">
             <strong className="text-ink">{unacknowledged.length}</strong> alert
             {unacknowledged.length === 1 ? "" : "s"} awaiting acknowledgement

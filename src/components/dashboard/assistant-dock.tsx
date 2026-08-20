@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ArrowUpRight, ChevronDown, Maximize2, Send, Sparkles, X,
 } from "lucide-react";
@@ -41,6 +42,7 @@ const QUICK_ASKS = [
 ];
 
 export function AssistantDock({ configured }: { configured: boolean }) {
+  const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
   const [turns, setTurns] = React.useState<Turn[]>([]);
   const [question, setQuestion] = React.useState("");
@@ -100,6 +102,9 @@ export function AssistantDock({ configured }: { configured: boolean }) {
       inputRef.current?.focus();
     }
   }
+
+  // On the assistant's own page the dock would be a second copy of itself.
+  if (pathname?.startsWith("/assistant")) return null;
 
   return (
     <>

@@ -1,7 +1,7 @@
 import { ScrollText } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { prisma } from "@/lib/db";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { AuditTable, type AuditRow } from "@/components/security/audit-table";
 
 export const dynamic = "force-dynamic";
@@ -42,12 +42,24 @@ export default async function AuditPage({
         description="Every security decision, configuration change and analyst action, in the order it happened. Append-only: nothing here can be edited or removed from the console."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Total Entries" value={total} />
-        <StatTile label="Categories" value={categories.length} />
-        <StatTile label="Configuration Changes" value={configChanges} hint="Guardrail, policy and platform changes." />
-        <StatTile label="Failure Outcomes" value={failures} polarity="higher-is-worse" hint="Blocked requests, refused tools and weakened controls — the entries that matter most." />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Total Entries", value: total },
+          { label: "Categories", value: categories.length },
+          {
+            label: "Configuration Changes",
+            value: configChanges,
+            hint: "Guardrail, policy and platform changes.",
+          },
+          {
+            label: "Failure Outcomes",
+            value: failures,
+            polarity: "higher-is-worse",
+            hint: "Blocked requests, refused tools and weakened controls — the entries that matter most.",
+          },
+        ]}
+      />
 
       <AuditTable
         logs={logs as AuditRow[]}

@@ -2,7 +2,7 @@ import { Scale } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { getPolicies } from "@/lib/queries/defense";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatTile } from "@/components/security/stat-tile";
+import { MetricStrip } from "@/components/security/metric-strip";
 import { PolicyTable, type PolicyRow } from "@/components/security/policy-table";
 import { FACT_CATALOGUE } from "@/lib/engine/policy/facts";
 
@@ -22,12 +22,23 @@ export default async function PoliciesPage() {
         description="Policies are stored as declarative conditions and evaluated as data — adding or retuning one is a configuration change, not a deployment."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Policies" value={policies.length} />
-        <StatTile label="Blocking Policies" value={blocking} hint="Policies whose action stops the request outright." />
-        <StatTile label="Require Approval" value={approval} hint="Policies that hold the action for a named human." />
-        <StatTile label="Disabled" value={disabled} polarity="higher-is-worse" />
-      </div>
+      <MetricStrip
+        className="mb-4"
+        metrics={[
+          { label: "Policies", value: policies.length },
+          {
+            label: "Blocking Policies",
+            value: blocking,
+            hint: "Policies whose action stops the request outright.",
+          },
+          {
+            label: "Require Approval",
+            value: approval,
+            hint: "Policies that hold the action for a named human.",
+          },
+          { label: "Disabled", value: disabled, polarity: "higher-is-worse" },
+        ]}
+      />
 
       <Card className="mb-4 border-brand/20 bg-brand-dim/10">
         <CardContent className="flex gap-3">
