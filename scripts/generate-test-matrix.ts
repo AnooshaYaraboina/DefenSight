@@ -14,6 +14,7 @@ import { buildAnalysisContext } from "@/lib/runtime/context";
 import { SCENARIOS } from "@/lib/simulator/scenarios";
 import { ATTACK_DOCUMENTS, BENIGN_TRICKY_DOCUMENTS } from "./seed/attack-corpus";
 import { randomUUID } from "node:crypto";
+import { plural } from "@/lib/engine/text";
 
 const esc = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
 
@@ -56,19 +57,19 @@ async function main() {
     total++;
 
     const mitigations: string[] = [];
-    if (result.withheldRetrievals.length) mitigations.push(`${result.withheldRetrievals.length} document(s) withheld`);
+    if (result.withheldRetrievals.length) mitigations.push(`${plural(result.withheldRetrievals.length, "document")} withheld`);
     const denied = result.toolDecisions.filter((d) => d.decision === "BLOCK");
-    if (denied.length) mitigations.push(`${denied.length} tool call(s) refused`);
+    if (denied.length) mitigations.push(`${plural(denied.length, "tool call")} refused`);
     if (result.redacted) mitigations.push("response redacted");
     if (result.blocked) mitigations.push("request blocked");
     const matched = result.policies.filter((p) => p.matched);
-    if (matched.length) mitigations.push(`${matched.length} policy match(es)`);
+    if (matched.length) mitigations.push(`${plural(matched.length, "policy match", "policy matches")}`);
 
     scenarioRows.push(
       `| ${ok ? "PASS" : "**FAIL**"} | ${esc(s.name)} | ${esc(s.objective)} | ` +
         `${esc(s.expected.decisions.join(" or "))}, risk ≥ ${s.expected.minRisk} | ` +
         `${result.decision}, risk ${result.riskScore} | ` +
-        `${result.detections.length} detection(s) across ${new Set(result.detections.map((d) => d.layer)).size} layer(s) | ` +
+        `${plural(result.detections.length, "detection")} across ${plural(new Set(result.detections.map((d) => d.layer)).size, "layer")} | ` +
         `${esc(mitigations.join("; ") || "none")} |`,
     );
   }
@@ -87,7 +88,7 @@ async function main() {
       `| ${ok ? "PASS" : "**FAIL**"} | ${esc(d.title)} | ${esc(d.technique.split(".")[0])} | ` +
         `${d.expected.shouldQuarantine ? "quarantine" : "flag"} | ` +
         `${scan.status.toLowerCase()}${scan.quarantine ? ", quarantined" : ""}, risk ${scan.riskScore} | ` +
-        `${scan.fusion.threats.length} threat(s), trust ${scan.trustScore}/100 | ` +
+        `${plural(scan.fusion.threats.length, "threat")}, trust ${scan.trustScore}/100 | ` +
         `${esc(scan.quarantine ? "withheld from all retrieval" : "flagged for review")} |`,
     );
   }
@@ -104,7 +105,7 @@ async function main() {
     total++;
     fpRows.push(
       `| ${ok ? "PASS" : "**FAIL**"} | ${esc(d.title)} | ${esc(d.note)} | clean, not quarantined | ` +
-        `${scan.status.toLowerCase()}, risk ${scan.riskScore} | ${scan.fusion.threats.length} threat(s) |`,
+        `${scan.status.toLowerCase()}, risk ${scan.riskScore} | ${plural(scan.fusion.threats.length, "threat")} |`,
     );
   }
 
