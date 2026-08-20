@@ -90,7 +90,7 @@ export default async function DetectionsPage() {
           const avg = byLayer.find((l) => l.layer === layer)?._avg.confidence ?? 0;
           const Icon = meta.icon;
           return (
-            <Card key={layer} className="p-4">
+            <Card key={layer} className="flex flex-col p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-8 items-center justify-center rounded-md border border-brand/25 bg-brand-dim/40">
@@ -104,15 +104,24 @@ export default async function DetectionsPage() {
                 <span className="font-mono text-lg font-semibold tabular text-ink">{count}</span>
               </div>
               <p className="mt-2.5 text-[11px] leading-relaxed text-ink-3">{meta.note}</p>
-              {count > 0 && (
-                <div className="mt-3">
-                  <div className="mb-1 flex items-baseline justify-between">
-                    <span className="text-[10px] text-ink-4">Average confidence</span>
-                    <span className="font-mono text-[10px] text-ink-2">{(avg * 100).toFixed(0)}%</span>
-                  </div>
-                  <Meter value={avg * 100} tone="brand" aria-label="Average confidence" />
-                </div>
-              )}
+
+              {/* Keep the footer slot occupied so cards in a row stay level —
+                  a layer that found nothing is information, not a gap. */}
+              <div className="mt-auto pt-3">
+                {count > 0 ? (
+                  <>
+                    <div className="mb-1 flex items-baseline justify-between">
+                      <span className="text-[10px] text-ink-4">Average confidence</span>
+                      <span className="font-mono text-[10px] text-ink-2">{(avg * 100).toFixed(0)}%</span>
+                    </div>
+                    <Meter value={avg * 100} tone="brand" aria-label="Average confidence" />
+                  </>
+                ) : (
+                  <p className="text-[10px] text-ink-4">
+                    No detections from this layer in the last 7 days.
+                  </p>
+                )}
+              </div>
             </Card>
           );
         })}

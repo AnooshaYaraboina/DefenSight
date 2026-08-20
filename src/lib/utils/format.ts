@@ -30,7 +30,10 @@ export function formatDateTime(d: Date | string): string {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false,
+    // `hour12: false` renders midnight as hour 24 in en-US ("Aug 21, 24:39:08"),
+    // which is not a real time and looks like a corrupted record in an audit
+    // log. h23 is the 00-23 cycle actually intended.
+    hourCycle: "h23",
   });
 }
 

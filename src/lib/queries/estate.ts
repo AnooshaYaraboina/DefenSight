@@ -8,7 +8,7 @@ const WINDOW_MS = 7 * 24 * 3600_000;
 
 export async function getApplications() {
   const since = new Date(Date.now() - WINDOW_MS);
-  const [apps, events] = await Promise.all([
+  const [apps, events, openIncidents] = await Promise.all([
     prisma.aiApplication.findMany({
       orderBy: { securityScore: "asc" },
       include: {
@@ -21,7 +21,16 @@ export async function getApplications() {
       where: { createdAt: { gte: since } },
       select: { applicationId: true, blocked: true, severity: true, riskScore: true, threatTypes: true },
     }),
+    prisma.incident.groupBy({
+      by: ["applicationId"],
+      where: { status: { in: ["OPEN", "INVESTIGATING"] } },
+      _count: true,
+    }),
   ]);
+
+  const openByApp = Object.fromEntries(
+    openIncidents.map((i) => [i.applicationId ?? "", i._count]),
+  );
 
   return apps.map((app) => {
     const own = events.filter((e) => e.applicationId === app.id);
@@ -33,6 +42,7 @@ export async function getApplications() {
       threats: threats.length,
       criticals: own.filter((e) => e.severity === "CRITICAL").length,
       avgRisk: own.length ? Math.round(own.reduce((s, e) => s + e.riskScore, 0) / own.length) : 0,
+      openIncidents: openByApp[app.id] ?? 0,
     };
   });
 }

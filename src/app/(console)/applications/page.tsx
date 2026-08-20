@@ -21,8 +21,9 @@ export default async function ApplicationsPage() {
       blocked: acc.blocked + a.blocked,
       agents: acc.agents + a._count.agents,
       incidents: acc.incidents + a._count.incidents,
+      open: acc.open + a.openIncidents,
     }),
-    { requests: 0, blocked: 0, agents: 0, incidents: 0 },
+    { requests: 0, blocked: 0, agents: 0, incidents: 0, open: 0 },
   );
 
   return (
@@ -36,7 +37,7 @@ export default async function ApplicationsPage() {
         <StatTile label="Applications" value={apps.length} hint="Registered and monitored." />
         <StatTile label="Agents Deployed" value={totals.agents} hint="Across all applications." />
         <StatTile label="Requests (7d)" value={totals.requests} hint="Requests evaluated by the pipeline this week." />
-        <StatTile label="Incidents Opened" value={totals.incidents} polarity="higher-is-worse" hint="Cases raised against these applications." />
+        <StatTile label="Open Incidents" value={totals.open} polarity="higher-is-worse" hint="Cases still open or under investigation across these applications." />
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
@@ -97,12 +98,16 @@ export default async function ApplicationsPage() {
                   <Database className="size-3" />
                   {app.vectorStores.length} store{app.vectorStores.length === 1 ? "" : "s"}
                 </span>
-                {app._count.incidents > 0 && (
+                {app.openIncidents > 0 ? (
                   <Badge tone="critical" size="xs">
                     <ShieldAlert />
-                    {app._count.incidents} incident{app._count.incidents === 1 ? "" : "s"}
+                    {app.openIncidents} open
                   </Badge>
-                )}
+                ) : app._count.incidents > 0 ? (
+                  <Badge tone="outline" size="xs">
+                    {app._count.incidents} resolved
+                  </Badge>
+                ) : null}
                 {app.avgRisk > 0 && <RiskPill score={app.avgRisk} />}
                 <span className="ml-auto text-[10px] text-ink-4">
                   {formatRelative(app.lastActivityAt)}
