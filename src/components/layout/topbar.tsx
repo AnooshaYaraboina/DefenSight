@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import * as Icons from "lucide-react";
 import { Bell, ChevronRight, LogOut, Menu, Search, ShieldCheck, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_INDEX, visibleNav } from "@/lib/nav";
-import { ROLE_META, type Role } from "@/lib/engine/taxonomy";
+import { CLASSIFICATION_META, ROLE_META, type Role } from "@/lib/engine/taxonomy";
 import { Logo, Wordmark } from "./logo";
 import { LiveDot } from "@/components/security/indicators";
 import {
@@ -41,7 +41,14 @@ export function Topbar({
   unreadAlerts?: number;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+
+  async function signOut() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/login");
+    router.refresh();
+  }
 
   // Resolve the current section from the nav model rather than duplicating
   // titles in every page component.
@@ -146,6 +153,12 @@ export function Topbar({
                   <p className="text-[10px] leading-snug text-ink-4">
                     {ROLE_META[user.role].description}
                   </p>
+                  <p className="mt-1.5 text-[10px] text-ink-4">
+                    Data clearance:{" "}
+                    <span className="text-ink-3">
+                      {CLASSIFICATION_META[user.clearance].label}
+                    </span>
+                  </p>
                 </div>
               </div>
               <DropdownMenuSeparator />
@@ -162,7 +175,7 @@ export function Topbar({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem destructive>
+              <DropdownMenuItem destructive onSelect={signOut}>
                 <LogOut />
                 Sign out
               </DropdownMenuItem>
@@ -178,12 +191,37 @@ export function Topbar({
   );
 }
 
+/**
+ * Global search.
+ *
+ * Focuses the monitor's own search rather than duplicating it behind a modal:
+ * one search surface, with filters that stay in the URL and can be shared.
+ */
 function GlobalSearchButton() {
+  const router = useRouter();
+
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        router.push("/monitor");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router]);
+
   return (
     <button
       type="button"
+      onClick={() => router.push("/monitor")}
       className="hidden items-center gap-2 rounded-md border border-line bg-surface px-2.5 py-1.5 text-[11px] text-ink-4 transition-colors hover:border-line-strong hover:text-ink-3 md:flex"
-      aria-label="Search"
+      aria-label="Search events"
     >
       <Search className="size-3.5" />
       <span className="pr-6">Search events, agents, incidents…</span>

@@ -1,5 +1,7 @@
 import "server-only";
-import type { Role } from "@/lib/engine/taxonomy";
+import { redirect } from "next/navigation";
+import type { Classification, Role } from "@/lib/engine/taxonomy";
+import { readSession } from "./auth";
 
 export interface SessionUser {
   id: string;
@@ -7,22 +9,24 @@ export interface SessionUser {
   email: string;
   role: Role;
   department: string;
+  /** Highest classification this person may be shown. */
+  clearance: Classification;
 }
 
 /**
- * Resolves the acting user for the current request.
+ * The acting user for the current request.
  *
- * Phase 9 replaces this body with signed-cookie session lookup against the
- * database. Every caller already treats the result as untrusted-until-checked
- * and runs it through `assertCan`, so swapping the implementation does not
- * change a single call site.
+ * Redirects to sign-in when there is no valid session, so every console page
+ * and every API route is authenticated by construction rather than by
+ * remembering to check.
  */
 export async function getCurrentUser(): Promise<SessionUser> {
-  return {
-    id: "usr_admin_seed",
-    name: "Security Administrator",
-    email: "soc-admin@northwind.example",
-    role: "SECURITY_ADMIN",
-    department: "Security Operations",
-  };
+  const user = await readSession();
+  if (!user) redirect("/login");
+  return user;
+}
+
+/** Non-redirecting variant, for routes that must return JSON on failure. */
+export async function getCurrentUserOrNull(): Promise<SessionUser | null> {
+  return readSession();
 }
