@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Radio } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatClock, truncate } from "@/lib/utils/format";
 import { useLiveEvents } from "@/lib/hooks/use-live-events";
