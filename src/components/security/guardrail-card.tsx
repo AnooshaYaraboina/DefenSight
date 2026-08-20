@@ -158,7 +158,7 @@ export function GuardrailCard({
               onValueChange={(v) => patch({ action: v }, `${guardrail.name} now ${v.toLowerCase().replace(/_/g, " ")}s`)}
             >
               <SelectTrigger size="sm">
-                <SelectValue />
+                <SelectValue>{DECISION_META[guardrail.action].label}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {DECISIONS.filter((d) => d !== "ALLOW").map((d) => (

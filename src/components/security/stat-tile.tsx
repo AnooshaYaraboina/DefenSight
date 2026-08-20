@@ -102,7 +102,7 @@ export function StatTile({
   );
 
   const shell = cn(
-    "group relative overflow-hidden rounded-panel border border-line bg-surface p-3.5 transition-colors",
+    "group relative flex flex-col overflow-hidden rounded-[0.625rem] border border-line bg-surface px-4 py-3.5 transition-colors",
     href && "hover:border-line-strong hover:bg-surface-2",
     className,
   );

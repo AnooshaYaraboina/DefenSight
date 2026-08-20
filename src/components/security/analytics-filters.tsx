@@ -69,10 +69,23 @@ function Filter({
   onChange: (v: string | null) => void;
   options: Array<{ value: string; label: string }>;
 }) {
+  // See event-table: the trigger must render its own text, because Radix
+  // cannot resolve the selected item while the option portal is unmounted.
+  const selected = value ? options.find((o) => o.value === value) : undefined;
+
   return (
     <Select value={value ?? "__all"} onValueChange={onChange}>
       <SelectTrigger size="sm" className={cn("w-auto min-w-32", value && "border-brand/40 text-brand")}>
-        <SelectValue placeholder={label} />
+        <SelectValue>
+          {selected ? (
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-ink-4">{label}</span>
+              <span className="truncate">{selected.label}</span>
+            </span>
+          ) : (
+            <span className="text-ink-4">{label}</span>
+          )}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="__all">All {label.toLowerCase()}s</SelectItem>

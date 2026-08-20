@@ -140,7 +140,11 @@ export function DocumentUpload({ sources }: { sources: Array<{ id: string; name:
                   <Label htmlFor="doc-source">Data source</Label>
                   <Select value={sourceId} onValueChange={setSourceId}>
                     <SelectTrigger id="doc-source" className="mt-1">
-                      <SelectValue placeholder="Select a source" />
+                      <SelectValue>
+                        {sources.find((s) => s.id === sourceId)?.name ?? (
+                          <span className="text-ink-4">Select a source</span>
+                        )}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {sources.map((s) => (
@@ -157,7 +161,9 @@ export function DocumentUpload({ sources }: { sources: Array<{ id: string; name:
                   <Label htmlFor="doc-class">Classification</Label>
                   <Select value={classification} onValueChange={setClassification}>
                     <SelectTrigger id="doc-class" className="mt-1">
-                      <SelectValue />
+                      <SelectValue>
+                        {classification.charAt(0) + classification.slice(1).toLowerCase()}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {CLASSIFICATIONS.map((c) => (

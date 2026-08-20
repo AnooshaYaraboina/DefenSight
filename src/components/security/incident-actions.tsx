@@ -71,7 +71,11 @@ export function IncidentActions({
         onValueChange={(v) => patch({ assignedToId: v === "__none" ? null : v }, "Assignment updated")}
       >
         <SelectTrigger size="sm" className="w-44">
-          <SelectValue placeholder="Assign analyst" />
+          <SelectValue>
+            {analysts.find((a) => a.id === assignedToId)?.name ?? (
+              <span className="text-ink-4">Assign analyst</span>
+            )}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__none">Unassigned</SelectItem>

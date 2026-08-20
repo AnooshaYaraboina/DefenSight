@@ -7,6 +7,17 @@ import { cn } from "@/lib/utils";
 
 export const Select = SelectPrimitive.Root;
 export const SelectGroup = SelectPrimitive.Group;
+
+/**
+ * Trigger text.
+ *
+ * **Always pass explicit children.** Radix derives the trigger's text from the
+ * selected `SelectItem`, but items live in a portal that is unmounted while the
+ * menu is closed — so with option lists built at runtime the trigger renders
+ * blank. Several filters across this console shipped as unlabelled chevrons
+ * before this was understood. Passing children makes the display independent of
+ * whether the portal has ever mounted.
+ */
 export const SelectValue = SelectPrimitive.Value;
 
 export const SelectTrigger = React.forwardRef<

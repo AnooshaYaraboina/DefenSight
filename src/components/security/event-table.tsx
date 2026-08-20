@@ -266,6 +266,14 @@ export function EventTable({
   );
 }
 
+/**
+ * Filter dropdown.
+ *
+ * The trigger renders its own text rather than relying on Radix to look up the
+ * selected item: items live in a portal that is unmounted while the menu is
+ * closed, so with dynamically built option lists the trigger came up blank —
+ * five unlabelled chevrons where the filters should be.
+ */
 function FilterSelect({
   label,
   value,
@@ -277,10 +285,21 @@ function FilterSelect({
   onChange: (value: string | null) => void;
   options: Array<{ value: string; label: string }>;
 }) {
+  const selected = value ? options.find((o) => o.value === value) : undefined;
+
   return (
     <Select value={value ?? "__all"} onValueChange={(v) => onChange(v === "__all" ? null : v)}>
       <SelectTrigger size="sm" className={cn("w-auto min-w-28", value && "border-brand/40 text-brand")}>
-        <SelectValue placeholder={label} />
+        <SelectValue>
+          {selected ? (
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-ink-4">{label}</span>
+              <span className="truncate">{selected.label}</span>
+            </span>
+          ) : (
+            <span className="text-ink-4">{label}</span>
+          )}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="__all">All {label.toLowerCase()}</SelectItem>

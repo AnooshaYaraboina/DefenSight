@@ -49,9 +49,10 @@ export function LiveTicker({ className }: { className?: string }) {
       </div>
 
       {events.length === 0 ? (
-        <p className="px-3 py-4 text-center text-[11px] text-ink-4">
-          <Radio className="mr-1.5 inline size-3" />
-          Waiting for AI activity. Start the traffic generator to see requests arrive.
+        // A quiet stream is the normal state. Say so in one line rather than
+        // reserving a panel-sized void above the table.
+        <p className="px-3 py-2 text-[11px] text-ink-4">
+          Nothing streaming right now — the table below holds the full history.
         </p>
       ) : (
         <ul className="divide-y divide-line">

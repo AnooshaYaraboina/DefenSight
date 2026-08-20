@@ -32,6 +32,8 @@ export default async function AnalyticsPage({
     severity: params.severity,
   });
 
+  const severityTotal = data.severityCounts.reduce((sum, s) => sum + s.count, 0);
+
   const severityColor = (s: Severity) =>
     ({
       CRITICAL: "var(--color-viz-ord-5)", HIGH: "var(--color-viz-ord-4)",
@@ -83,23 +85,45 @@ export default async function AnalyticsPage({
               Distribution of scored events by severity band.
             </p>
           </div>
+          {/*
+            The bar carries its own legend; rendering a second list beneath it
+            duplicated every label. This list is the legend — it adds the count
+            and share the inline one cannot fit.
+          */}
           <CompositionBar
+            showLegend={false}
             segments={data.severityCounts.map((s) => ({
               label: SEVERITY_META[s.severity].label,
               value: s.count,
               color: severityColor(s.severity),
             }))}
           />
-          <dl className="mt-4 space-y-1.5">
-            {data.severityCounts.map((s) => (
-              <div key={s.severity} className="flex items-center justify-between gap-2 text-[11px]">
-                <dt className="flex items-center gap-1.5 text-ink-3">
-                  <span className="size-2 rounded-sm" style={{ background: severityColor(s.severity) }} />
-                  {SEVERITY_META[s.severity].label}
-                </dt>
-                <dd className="font-mono tabular text-ink-2">{s.count}</dd>
-              </div>
-            ))}
+
+          <dl className="mt-5 space-y-2.5">
+            {data.severityCounts.map((s) => {
+              const share = severityTotal > 0 ? (s.count / severityTotal) * 100 : 0;
+              return (
+                <div key={s.severity} className="flex items-center gap-3">
+                  <dt className="flex min-w-0 flex-1 items-center gap-2">
+                    <span
+                      className="size-2.5 shrink-0 rounded-sm"
+                      style={{ background: severityColor(s.severity) }}
+                    />
+                    <span className="truncate text-xs text-ink-2">
+                      {SEVERITY_META[s.severity].label}
+                    </span>
+                  </dt>
+                  <dd className="flex shrink-0 items-baseline gap-2">
+                    <span className="font-mono text-sm font-semibold tabular text-ink">
+                      {s.count}
+                    </span>
+                    <span className="w-10 text-right font-mono text-[10px] tabular text-ink-4">
+                      {share.toFixed(0)}%
+                    </span>
+                  </dd>
+                </div>
+              );
+            })}
           </dl>
         </Card>
       </div>
