@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { getCurrentUser } from "@/lib/rbac/session";
+import { getNavBadges } from "@/lib/queries/events";
 
 /**
  * Console shell. Everything inside the (console) route group renders with the
@@ -15,14 +16,14 @@ export default async function ConsoleLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
+  const [user, badges] = await Promise.all([getCurrentUser(), getNavBadges()]);
 
   return (
     <TooltipProvider delayDuration={250}>
       <div className="flex min-h-dvh">
-        <Sidebar role={user.role} />
+        <Sidebar role={user.role} badges={badges} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar user={user} />
+          <Topbar user={user} unreadAlerts={badges.unreadAlerts} />
           <main className="flex-1 px-3 py-5 sm:px-5 lg:px-6">{children}</main>
         </div>
       </div>

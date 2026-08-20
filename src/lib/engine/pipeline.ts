@@ -309,6 +309,9 @@ export function analyze(context: AnalysisContext): AnalysisResult {
             proposedToolCalls,
             tools,
             retrievals,
+            grantedToolSlugs: Object.values(context.agent!.grants)
+              .filter((g) => !g.denied)
+              .map((g) => g.toolSlug),
           });
           if (analysis.divergence >= 0.5) {
             detections.push({

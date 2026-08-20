@@ -67,8 +67,26 @@ export function RiskGauge({
   invert?: boolean;
   className?: string;
 }) {
-  const sev = severityFromRisk(invert ? 100 - score : score);
-  const tone = toneFor(sev);
+  /*
+   * An inverted gauge measures posture, not risk, so it needs its own tone
+   * scale: a security score of 89 must read as good. Mapping it through the
+   * risk scale rendered it in the "informational" grey — technically the
+   * inverse severity, visually meaningless.
+   */
+  const sev: Severity = invert
+    ? score >= 85
+      ? "INFO"
+      : score >= 70
+        ? "LOW"
+        : score >= 50
+          ? "MEDIUM"
+          : score >= 30
+            ? "HIGH"
+            : "CRITICAL"
+    : severityFromRisk(score);
+  const tone = invert && score >= 85
+    ? { text: "text-allow", ring: "stroke-allow", bg: "bg-allow-dim", border: "border-allow/35" }
+    : toneFor(sev);
   const stroke = 7;
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;

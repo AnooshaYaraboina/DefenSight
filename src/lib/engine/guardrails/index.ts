@@ -21,6 +21,7 @@ import type {
   GuardrailEvaluation,
   SensitiveFinding,
 } from "../types";
+import { fuseDetections, type FusedThreat } from "../detectors/fusion";
 import { redactSensitive } from "../sensitive";
 
 /** Which detection threat types each control type is responsible for. */
@@ -57,6 +58,18 @@ export interface GuardrailInput {
   systemPrompt?: string;
 }
 
+/**
+ * Confidence a *single* detection layer may contribute before corroboration.
+ *
+ * A guardrail acts on fused confidence, not on the loudest individual detector.
+ * The structural and semantic layers are corroborating by design — they
+ * generalise well but are noisy on short text — so allowing either to cross a
+ * block threshold alone would contradict the whole fusion model and produce
+ * exactly the false positives it exists to prevent. Fusion applies each layer's
+ * reliability weight and only awards the agreement bonus when independent
+ * methods converge.
+ */
+
 export interface GuardrailResult {
   evaluations: GuardrailEvaluation[];
   triggered: GuardrailEvaluation[];
@@ -73,6 +86,7 @@ export function evaluateGuardrails(input: GuardrailInput): GuardrailResult {
   const relevantSensitive = input.sensitiveFindings.filter((f) =>
     input.channels.includes(f.channel),
   );
+  const fusedThreats = fuseDetections(relevantDetections).threats;
 
   for (const g of input.guardrails) {
     if (g.direction !== input.direction) continue;
@@ -103,8 +117,11 @@ export function evaluateGuardrails(input: GuardrailInput): GuardrailResult {
     const matchingDetections = relevantDetections.filter((d) =>
       watchedThreats.includes(d.threatType),
     );
-    const peakDetection = matchingDetections.reduce<DetectionResult | null>(
-      (best, d) => (!best || d.confidence > best.confidence ? d : best),
+    // Act on the fused verdict rather than the loudest single detector, so a
+    // lone corroborating layer cannot trip a block by itself.
+    const matchingThreats = fusedThreats.filter((t) => watchedThreats.includes(t.threatType));
+    const peakThreat = matchingThreats.reduce<FusedThreat | null>(
+      (best, t) => (!best || t.confidence > best.confidence ? t : best),
       null,
     );
 
@@ -137,7 +154,7 @@ export function evaluateGuardrails(input: GuardrailInput): GuardrailResult {
     }
 
     const confidence = Math.max(
-      peakDetection?.confidence ?? 0,
+      peakThreat?.confidence ?? 0,
       peakSensitive,
       leakConfidence,
     );
@@ -149,9 +166,9 @@ export function evaluateGuardrails(input: GuardrailInput): GuardrailResult {
       evaluation.detectionIds = matchingDetections.map((d) => d.detectorId);
 
       const reasons: string[] = [];
-      if (peakDetection) {
+      if (peakThreat) {
         reasons.push(
-          `${peakDetection.threatType.replace(/_/g, " ").toLowerCase()} detected at ${(peakDetection.confidence * 100).toFixed(0)}% confidence in ${peakDetection.channel.replace(/_/g, " ").toLowerCase()}`,
+          `${peakThreat.threatType.replace(/_/g, " ").toLowerCase()} confirmed at ${(peakThreat.confidence * 100).toFixed(0)}% fused confidence across ${peakThreat.agreement} independent layer(s)`,
         );
       }
       if (matchingSensitive.length > 0) {
@@ -170,7 +187,8 @@ export function evaluateGuardrails(input: GuardrailInput): GuardrailResult {
       }
     } else if (confidence > 0) {
       evaluation.confidence = confidence;
-      evaluation.explanation = `${g.name} observed a signal at ${(confidence * 100).toFixed(0)}% confidence, below its configured threshold of ${g.threshold}%. No action taken.`;
+      const single = peakThreat?.agreement === 1;
+      evaluation.explanation = `${g.name} observed a signal at ${(confidence * 100).toFixed(0)}% fused confidence, below its configured threshold of ${g.threshold}%.${single ? " Only one detection layer agreed, so the finding is recorded as a lead rather than acted on." : ""} No action taken.`;
     } else {
       evaluation.explanation = `${g.name} found nothing in scope.`;
     }

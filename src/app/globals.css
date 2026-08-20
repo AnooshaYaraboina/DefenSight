@@ -54,6 +54,50 @@
   --color-approval: #38bdf8;
   --color-approval-dim: #0a2c42;
 
+  /* ------------------------------------------------------------------
+     Chart palette — VALIDATED, do not hand-edit.
+     
+     These are distinct from the UI severity tokens above. Badge colours are
+     chosen to read as text and borders; chart series colours must additionally
+     clear colour-vision-deficiency separation and contrast against the chart
+     surface (#0c111b). Every set below passes the six checks from the dataviz
+     validator in dark mode. Re-run it before changing any value:
+       node validate_palette.js "<hex,...>" --mode dark --surface "#0c111b"
+     ------------------------------------------------------------------ */
+
+  /* Two-series time trend: total vs critical. */
+  --color-viz-primary: #22a5c4;
+  --color-viz-critical: #e34948;
+
+  /* Ordinal severity/risk ramp, low → critical. One hue, monotone lightness —
+     a red→orange→yellow "severity rainbow" cannot clear the adjacent-pair
+     floor at any stepping, because those hues are neighbours. */
+  --color-viz-ord-1: #8f2839;
+  --color-viz-ord-2: #b03348;
+  --color-viz-ord-3: #cf4159;
+  --color-viz-ord-4: #e75f70;
+  --color-viz-ord-5: #f48c96;
+
+  /* Decision states. Ordered so no two adjacent slots collide under CVD. */
+  --color-viz-allow: #1f9d57;
+  --color-viz-redact: #8f74e0;
+  --color-viz-warn: #c98500;
+  --color-viz-block: #e34948;
+
+  /* Categorical slots for threat families and tool breakdowns. Fixed order,
+     never cycled; a seventh series folds into "Other" rather than inventing a
+     hue. */
+  --color-viz-1: #3987e5;
+  --color-viz-2: #d95926;
+  --color-viz-3: #199e70;
+  --color-viz-4: #c98500;
+  --color-viz-5: #d55181;
+  --color-viz-6: #9085e9;
+
+  /* Recessive chart furniture. */
+  --color-viz-grid: #1a2334;
+  --color-viz-axis: #47566e;
+
   /* ---- Fonts ---- */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;

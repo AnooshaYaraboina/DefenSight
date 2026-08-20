@@ -36,13 +36,13 @@ type IntentKind =
   | "UNKNOWN";
 
 const INTENT_SIGNATURES: Array<{ kind: IntentKind; re: RegExp }> = [
-  { kind: "SUMMARISE", re: /\b(?:summari[sz]e|summary|tl;?dr|brief me|key points|overview of|recap|digest)\b/i },
-  { kind: "LOOKUP", re: /\b(?:what is|what are|who is|where is|when (?:is|was|did)|find|search|look ?up|show me|tell me about|which|list)\b/i },
-  { kind: "ANALYSE", re: /\b(?:analy[sz]e|compare|evaluate|assess|why|explain|break down|investigate|trend)\b/i },
-  { kind: "REPORT", re: /\b(?:generate|produce|create|build|prepare|draft)\s+(?:a\s+)?(?:report|deck|summary|document|analysis)\b/i },
-  { kind: "COMMUNICATE", re: /\b(?:email|send|reply|respond|notify|message|post|forward|contact)\b/i },
-  { kind: "MODIFY", re: /\b(?:update|change|edit|modify|correct|fix|set|delete|remove|archive)\b/i },
-  { kind: "OPERATE", re: /\b(?:deploy|roll ?back|restart|scale|provision|run|execute)\b/i },
+  { kind: "SUMMARISE", re: /\b(?:summari[sz]e|summary|tl;?dr|brief me|key points|overview of|recap|digest|condense|walk me through)\b/i },
+  { kind: "LOOKUP", re: /\b(?:what|who|where|when|which|how (?:do|does|can|many|much)|find|search|look ?up|show me|tell me|list|pull|retrieve|extract|check)\b/i },
+  { kind: "ANALYSE", re: /\b(?:analy[sz]e|compare|evaluate|assess|why|explain|break down|investigate|trend|triage|classify|priorit)/i },
+  { kind: "REPORT", re: /\b(?:generate|produce|create|build|prepare|draft|write|assemble|compile)\b/i },
+  { kind: "COMMUNICATE", re: /\b(?:email|send|repl(?:y|ies)|respond|response|notify|message|post|forward|contact|apolog|announce)/i },
+  { kind: "MODIFY", re: /\b(?:update|change|edit|modify|correct|fix|set|delete|remove|archive|open a ticket|raise a ticket)\b/i },
+  { kind: "OPERATE", re: /\b(?:deploy|roll ?back|restart|scale|provision|execute)\b/i },
 ];
 
 function classifyIntent(request: string): IntentKind[] {
@@ -66,7 +66,10 @@ const PLAUSIBLE_CATEGORIES: Record<IntentKind, string[]> = {
   COMMUNICATE: ["SEARCH", "FILE", "API", "EMAIL", "MESSAGING"],
   MODIFY: ["SEARCH", "FILE", "DATABASE", "API", "BUSINESS"],
   OPERATE: ["SEARCH", "FILE", "BUSINESS", "CODE", "MESSAGING"],
-  UNKNOWN: ["SEARCH", "FILE"],
+  // An unclassifiable request is not evidence of anything. Treating "I could
+  // not parse this" as "this is an attack" was the single largest source of
+  // false positives in replay: two thirds of blocked benign traffic.
+  UNKNOWN: [],
 };
 
 /* --------------------------------------------------------------- relevance */
@@ -98,6 +101,14 @@ export interface BehaviourInput {
   proposedToolCalls: ProposedToolCall[];
   tools: Record<string, ToolDefinitionContext>;
   retrievals?: RetrievedChunk[];
+  /**
+   * Tool slugs the agent holds a grant for. A grant is an administrator's
+   * explicit assertion that this agent legitimately performs this action, so a
+   * granted-but-tangential call is a scoping question, not an attack. Ungranted
+   * calls are the real divergence signal — and are exactly what an injected
+   * agent reaches for.
+   */
+  grantedToolSlugs?: string[];
 }
 
 export function analyseAgentBehaviour(input: BehaviourInput): IntentAnalysis {
@@ -117,6 +128,23 @@ export function analyseAgentBehaviour(input: BehaviourInput): IntentAnalysis {
   }
 
   const intentKinds = classifyIntent(userRequest);
+
+  // Without a classified intent there is no baseline to diverge *from*. The
+  // tool gateway still authorises every call independently, so declining to
+  // judge here costs no enforcement — it only avoids inventing a signal.
+  if (intentKinds.length === 1 && intentKinds[0] === "UNKNOWN") {
+    return {
+      divergence: 0,
+      statedIntent: userRequest.slice(0, 200),
+      observedActions: proposedToolCalls.map(
+        (c) => `${tools[c.toolSlug]?.name ?? c.toolSlug} (${c.operation})`,
+      ),
+      unrelatedActions: [],
+      explanation:
+        "The request could not be classified into a known intent, so agent actions were not scored for divergence. Tool authorisation still applied to every call independently.",
+    };
+  }
+
   const plausible = new Set(intentKinds.flatMap((k) => PLAUSIBLE_CATEGORIES[k]));
   const requestTokens = tokens(`${userRequest} ${input.agentPurpose}`);
 
@@ -136,6 +164,13 @@ export function analyseAgentBehaviour(input: BehaviourInput): IntentAnalysis {
     totalWeight += weight;
 
     const categoryPlausible = tool ? plausible.has(tool.category) : false;
+    // When the caller supplies no grant list we have no assertion that the
+    // action is sanctioned, so the discount is withheld. Defaulting to
+    // "granted" would be the permissive assumption, which is the wrong default
+    // for a security control.
+    const granted = Array.isArray(input.grantedToolSlugs)
+      ? input.grantedToolSlugs.includes(call.toolSlug)
+      : false;
 
     const actionText = `${tool?.name ?? call.toolSlug} ${tool?.description ?? ""} ${Object.values(call.arguments).filter((v) => typeof v === "string").join(" ")}`;
     const relevance = jaccard(requestTokens, tokens(actionText));
@@ -144,11 +179,13 @@ export function analyseAgentBehaviour(input: BehaviourInput): IntentAnalysis {
     // signal because short requests share few tokens with anything.
     let actionDivergence = 0;
     if (!categoryPlausible) {
-      actionDivergence = 0.85;
+      // Ungranted and implausible is the injection signature. Granted but
+      // implausible is over-scoping: worth surfacing, not worth blocking.
+      actionDivergence = granted ? 0.3 : 0.85;
       unrelatedActions.push(
-        `${label} — ${tool ? `${tool.category.toLowerCase()} capability` : "unregistered tool"} has no plausible role in a request of this kind (${intentKinds.join("/").toLowerCase()})`,
+        `${label} — ${tool ? `${tool.category.toLowerCase()} capability` : "unregistered tool"} has no plausible role in a request of this kind (${intentKinds.join("/").toLowerCase()})${granted ? ", though the agent does hold a grant for it" : " and the agent holds no grant for it"}`,
       );
-    } else if (relevance < 0.03 && sideEffecting) {
+    } else if (relevance < 0.03 && sideEffecting && !granted) {
       actionDivergence = 0.5;
       unrelatedActions.push(
         `${label} — a side-effecting action with no textual connection to the request`,

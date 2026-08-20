@@ -112,4 +112,23 @@ export const BENIGN_CORPUS: CorpusEntry[] = [
   { technique: "benign-training", text: "what gave it away was the urgency the instruction to bypass process and the request for secrecy" },
   { technique: "benign-training", text: "forward suspected phishing to the reporting address and do not click any links in the message" },
   { technique: "benign-training", text: "below are redacted examples from the last quarter reproduced for training purposes only" },
+
+  // Short, everyday requests. Replay showed one-line business prompts landing
+  // close to attack phrasings by chance; these anchor the benign baseline for
+  // exactly that length of text.
+  { technique: "benign-request", text: "draft an apology for the delayed first response on this ticket" },
+  { technique: "benign-request", text: "write a response about the upcoming maintenance window" },
+  { technique: "benign-request", text: "draft a reply explaining the resolution to the customer" },
+  { technique: "benign-request", text: "what are the first response steps for elevated errors on the settlement endpoint" },
+  { technique: "benign-request", text: "what is our error budget for the payments api this month" },
+  { technique: "benign-request", text: "build the monthly revenue report for september" },
+  { technique: "benign-request", text: "extract the liability cap from the master services agreement" },
+  { technique: "benign-request", text: "what is the notice period on the customer contract" },
+  { technique: "benign-request", text: "what are the resource limit requirements for a new workload" },
+  { technique: "benign-request", text: "what are the main points of the ai usage security policy" },
+  { technique: "benign-request", text: "triage this ticket the customer reports a settlement delay on their account" },
+  { technique: "benign-request", text: "who should i contact about a benefits enrolment question" },
+  { technique: "benign-request", text: "what is the employer match on the retirement plan" },
+  { technique: "benign-request", text: "how do we roll back a bad deploy" },
+  { technique: "benign-request", text: "pull together what we know about the settlement delay incident" },
 ];

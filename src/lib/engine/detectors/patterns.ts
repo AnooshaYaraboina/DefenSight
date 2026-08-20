@@ -50,6 +50,10 @@ export const PATTERN_FAMILIES: PatternFamily[] = [
       { re: /\b(?:new|updated|revised)\s+(?:system\s+)?(?:instructions?|directives?|rules?)\s*[:\-]/gi, weight: 0.75, label: "supplies replacement instructions" },
       { re: /\byour\s+(?:prior|previous|original|initial)\s+(?:safety\s+)?(?:constraints?|instructions?|restrictions?|rules?)\s+(?:do\s+not|don'?t|no\s+longer)\s+apply\b/gi, weight: 1, label: "asserts constraints void" },
       { re: /\binstead\s+of\s+(?:following|obeying|using)\s+(?:your|the)\s+(?:instructions?|rules?|prompt)/gi, weight: 0.8, label: "substitutes instructions" },
+      // Polite paraphrases of "ignore your instructions". Replay showed this
+      // register slipping past the direct phrasings above.
+      { re: /\b(?:set|put|lay)\s+aside\s+(?:the|your|any|all|prior|earlier|previous)?\s*(?:guidance|instructions?|directions?|rules?|constraints?|guidelines?)\b/gi, weight: 0.9, label: "politely sets instructions aside" },
+      { re: /\bdisregard(?:ing)?\s+(?:the\s+|your\s+)?(?:earlier|preceding)\s+(?:guidance|directions?|steer)/gi, weight: 0.85, label: "sets aside earlier guidance" },
     ],
   },
   {
@@ -80,6 +84,9 @@ export const PATTERN_FAMILIES: PatternFamily[] = [
       { re: /\byour\s+(?:tool|function)\s+(?:list|definitions?|schemas?|specifications?)\b/gi, weight: 0.8, label: "requests tool definitions" },
       { re: /\bverbatim\b(?=[^.]{0,60}(?:prompt|instructions?|system|configuration))/gi, weight: 0.7, label: "demands verbatim output" },
       { re: /\bconfig\s*dump\b/gi, weight: 0.9, label: "config dump marker" },
+      // Indirect ways of naming the system prompt without using the phrase.
+      { re: /\b(?:original|initial|underlying|starting)\s+(?:setup|configuration|config|priming|preamble)\s+(?:text|message|prompt|instructions?)\b/gi, weight: 0.95, label: "names the system prompt indirectly" },
+      { re: /\bword\s+for\s+word\b(?=[\s\S]{0,90}(?:said|says|instruction|prompt|setup|configuration|told|given))|(?:said|instruction|prompt|setup|configuration|told|given)[\s\S]{0,90}\bword\s+for\s+word\b/gi, weight: 0.75, label: "demands verbatim reproduction" },
       { re: /\bwhat\s+(?:security\s+)?(?:guardrails?|restrictions?|filters?|constraints?)\s+(?:are\s+you|do\s+you\s+have|apply)\b/gi, weight: 0.7, label: "probes guardrail configuration" },
     ],
   },

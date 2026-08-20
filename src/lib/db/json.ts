@@ -36,3 +36,17 @@ export function jsonObject<T extends object>(value: unknown, fallback: T): T {
 export function toJson<T>(value: T | undefined | null): T | null {
   return value === undefined ? null : value;
 }
+
+/**
+ * Cast a typed value to Prisma's Json input type.
+ *
+ * Prisma's `InputJsonValue` requires an index signature, which a declared
+ * interface deliberately does not have. Every value passed through here is
+ * already JSON-serialisable by construction — these are plain data structures
+ * built by the engine — so the assertion is safe. Keeping it in one named
+ * helper means the cast is documented once instead of appearing as an
+ * unexplained `as never` at every call site.
+ */
+export function asJson<T>(value: T): never {
+  return value as never;
+}

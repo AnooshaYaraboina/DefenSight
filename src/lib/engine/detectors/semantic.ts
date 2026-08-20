@@ -172,8 +172,16 @@ export const semanticDetector: Detector = {
       const match = analyseSemantics(target.text);
       if (!match) continue;
 
-      // Require both a real resemblance and a clear margin over benign language.
-      if (match.similarity < 0.18 || match.margin < 0.06) continue;
+      /*
+       * Short text carries few n-grams, so cosine similarity against it is
+       * noisy — a one-line business request can land within 0.07 of an attack
+       * phrasing purely by chance. Replay showed this producing the majority of
+       * this layer's false positives, so short inputs must clear a materially
+       * wider margin before the layer will speak.
+       */
+      const shortText = target.text.length < 220;
+      const minMargin = shortText ? 0.16 : 0.09;
+      if (match.similarity < 0.2 || match.margin < minMargin) continue;
 
       const threatType = TECHNIQUE_THREATS[match.technique] ?? "PROMPT_INJECTION";
       if (seen.has(threatType + target.origin)) continue;
