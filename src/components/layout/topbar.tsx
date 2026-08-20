@@ -56,6 +56,22 @@ export function Topbar({
   const current = NAV_INDEX[base];
   const isDetail = pathname !== base && pathname !== "/";
 
+  /*
+   * Database identifiers are not a breadcrumb.
+   *
+   * Detail routes are keyed by cuid, so the trailing segment rendered as
+   * "Incidents › cmt1wedom05ael1d7c5ejvq7x" — noise that told the analyst
+   * nothing the page heading did not already say. Human-readable segments
+   * (slugs like `atlas-assistant`) are still worth showing.
+   */
+  const trailing = pathname.split("/").filter(Boolean).slice(1);
+  const looksLikeId = (segment: string) =>
+    /^c[a-z0-9]{20,}$/i.test(segment) || /^[0-9a-f-]{32,}$/i.test(segment);
+  const detailLabel = trailing
+    .filter((segment) => !looksLikeId(segment))
+    .map((segment) => decodeURIComponent(segment))
+    .join(" / ");
+
   return (
     <>
       <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-line bg-base/85 px-3 backdrop-blur supports-[backdrop-filter]:bg-base/70 sm:px-4">
@@ -86,12 +102,10 @@ export function Topbar({
               ) : (
                 <span className="truncate text-xs font-medium text-ink">{current.label}</span>
               )}
-              {isDetail && (
+              {isDetail && detailLabel && (
                 <>
                   <ChevronRight className="size-3 shrink-0 text-ink-4" />
-                  <span className="truncate font-mono text-[11px] text-ink-2">
-                    {decodeURIComponent(pathname.split("/").filter(Boolean).slice(1).join(" / "))}
-                  </span>
+                  <span className="truncate font-mono text-[11px] text-ink-2">{detailLabel}</span>
                 </>
               )}
             </>

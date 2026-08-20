@@ -50,9 +50,17 @@ export function formatRelative(d: Date | string): string {
 }
 
 export function formatDuration(ms: number): string {
+  // A stage that completed in under a tenth of a millisecond is instantaneous,
+  // not "0µs" — rendering a zero reads as a broken measurement.
+  if (ms <= 0) return "<0.1ms";
   if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
   if (ms < 1000) return `${ms.toFixed(ms < 10 ? 1 : 0)}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
+}
+
+/** "1 document" / "2 documents" — avoids the "1 document(s)" tell. */
+export function plural(count: number, singular: string, pluralForm?: string): string {
+  return `${count} ${count === 1 ? singular : (pluralForm ?? `${singular}s`)}`;
 }
 
 export function formatBytes(bytes: number): string {

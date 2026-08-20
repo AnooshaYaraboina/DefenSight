@@ -168,13 +168,32 @@ function NavLink({
       )}
       <Icon name={item.icon} className={cn("size-4 shrink-0", active && "text-brand")} />
       {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+      {/*
+        Only work that blocks a human stays loud. Threat and alert counts are
+        observations, not tasks — rendering four red badges at once trains the
+        eye to ignore all of them, which defeats the one that matters.
+      */}
       {!collapsed && count !== undefined && count > 0 && (
-        <span className="rounded bg-critical-dim px-1 font-mono text-[10px] font-semibold text-critical tabular">
+        <span
+          className={cn(
+            "rounded px-1 font-mono text-[10px] font-semibold tabular",
+            item.badge === "pendingApprovals" || item.badge === "openIncidents"
+              ? "bg-critical-dim text-critical"
+              : "bg-surface-2 text-ink-4",
+          )}
+        >
           {count > 99 ? "99+" : count}
         </span>
       )}
       {collapsed && count !== undefined && count > 0 && (
-        <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-critical" />
+        <span
+          className={cn(
+            "absolute right-1.5 top-1.5 size-1.5 rounded-full",
+            item.badge === "pendingApprovals" || item.badge === "openIncidents"
+              ? "bg-critical"
+              : "bg-ink-4",
+          )}
+        />
       )}
     </Link>
   );

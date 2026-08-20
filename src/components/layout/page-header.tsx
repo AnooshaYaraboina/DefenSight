@@ -6,12 +6,15 @@ import { cn } from "@/lib/utils";
  * copy and primary actions sit in the same place on every route.
  */
 export function PageHeader({
+  eyebrow,
   title,
   description,
   actions,
   children,
   className,
 }: {
+  /** Reference and status, above the title. Keeps the heading a heading. */
+  eyebrow?: React.ReactNode;
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
@@ -20,8 +23,9 @@ export function PageHeader({
 }) {
   return (
     <div className={cn("mb-5", className)}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
+          {eyebrow && <div className="mb-1.5">{eyebrow}</div>}
           <h1 className="text-lg font-semibold tracking-tight text-ink">{title}</h1>
           {description && (
             <p className="mt-0.5 max-w-2xl text-xs leading-relaxed text-ink-3">{description}</p>

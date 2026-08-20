@@ -82,14 +82,15 @@ export default async function EventDetailPage({
       </div>
 
       <PageHeader
-        title={
-          <span className="flex flex-wrap items-center gap-2.5">
-            <span className="font-mono text-base">{event.ref}</span>
-            <SeverityBadge severity={event.severity} />
-            <DecisionBadge decision={event.decision} />
+        eyebrow={
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[11px] text-ink-3">{event.ref}</span>
+            <SeverityBadge severity={event.severity} size="xs" />
+            <DecisionBadge decision={event.decision} size="xs" />
           </span>
         }
-        description={formatDateTime(event.createdAt)}
+        title={event.application?.name ?? "Security event"}
+        description={`${formatDateTime(event.createdAt)} · ${event.user?.name ?? "unknown principal"}${event.agent ? ` via ${event.agent.name}` : ""}`}
         actions={
           event.incident ? (
             <Button variant="secondary" size="sm" asChild>

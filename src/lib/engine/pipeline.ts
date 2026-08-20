@@ -41,6 +41,7 @@ import type {
   ToolDecision,
 } from "./types";
 import { normalize } from "./normalize";
+import { plural } from "./text";
 import { runDetectors, fuseDetections, behaviouralDetections } from "./detectors";
 import { scanSensitive } from "./sensitive";
 import { assessRisk } from "./risk";
@@ -117,8 +118,8 @@ export function analyze(context: AnalysisContext): AnalysisResult {
 
     return {
       summary: found.length
-        ? `${found.length} threat indicator(s) found in the user's prompt; strongest at ${(Math.max(...found.map((d) => d.confidence)) * 100).toFixed(0)}% confidence.`
-        : `No threat indicators in the user's prompt.${sensitive.length ? ` ${sensitive.length} sensitive value type(s) present.` : ""}`,
+        ? `${plural(found.length, "threat indicator")} found in the user's prompt; strongest at ${(Math.max(...found.map((d) => d.confidence)) * 100).toFixed(0)}% confidence.`
+        : `No threat indicators in the user's prompt.${sensitive.length ? ` ${plural(sensitive.length, "sensitive value type")} present.` : ""}`,
       details: {
         detections: found.length,
         sensitiveTypes: sensitive.map((s) => s.type),
@@ -144,7 +145,7 @@ export function analyze(context: AnalysisContext): AnalysisResult {
         "PUBLIC",
       );
       return {
-        summary: `${retrievals.length} document(s) retrieved from ${new Set(retrievals.map((r) => r.sourceName)).size} source(s). Lowest trust ${minDocumentTrust}/100, highest classification ${maxRetrievedClassification.toLowerCase()}.`,
+        summary: `${plural(retrievals.length, "document")} retrieved from ${plural(new Set(retrievals.map((r) => r.sourceName)).size, "source")}. Lowest trust ${minDocumentTrust}/100, highest classification ${maxRetrievedClassification.toLowerCase()}.`,
         details: {
           documents: retrievals.map((r) => ({
             title: r.title,
@@ -259,8 +260,8 @@ export function analyze(context: AnalysisContext): AnalysisResult {
 
       return {
         summary: flagged
-          ? `${flagged} of ${retrievals.length} retrieved document(s) raised findings. ${withheldRetrievals.length} withheld from the model context.`
-          : `All ${retrievals.length} retrieved document(s) passed content analysis.`,
+          ? `${flagged} of ${plural(retrievals.length, "retrieved document")} raised findings. ${withheldRetrievals.length} withheld from the model context.`
+          : `All ${plural(retrievals.length, "retrieved document")} passed content analysis.`,
         details: {
           scanned: retrievals.length,
           flagged,
@@ -278,7 +279,7 @@ export function analyze(context: AnalysisContext): AnalysisResult {
     const fused = fuseDetections(detections);
     return {
       summary: fused.primary
-        ? `${fused.threats.length} threat type(s) confirmed. Primary: ${fused.primary.threatType.replace(/_/g, " ").toLowerCase()} at ${(fused.maxConfidence * 100).toFixed(0)}% confidence from ${fused.primary.agreement} independent layer(s).`
+        ? `${plural(fused.threats.length, "threat type")} confirmed. Primary: ${fused.primary.threatType.replace(/_/g, " ").toLowerCase()} at ${(fused.maxConfidence * 100).toFixed(0)}% confidence from ${plural(fused.primary.agreement, "independent layer")}.`
         : "No threats confirmed by the detection engine.",
       details: {
         threats: fused.threats.map((t) => ({
@@ -415,7 +416,7 @@ export function analyze(context: AnalysisContext): AnalysisResult {
       }
 
       return {
-        summary: `${gateway.decisions.length} tool request(s) evaluated: ${gateway.deniedCount} blocked, ${gateway.approvalCount} held for approval, ${gateway.decisions.filter((d) => d.decision === "ALLOW").length} permitted.`,
+        summary: `${plural(gateway.decisions.length, "tool request")} evaluated: ${gateway.deniedCount} blocked, ${gateway.approvalCount} held for approval, ${gateway.decisions.filter((d) => d.decision === "ALLOW").length} permitted.`,
         details: {
           calls: gateway.decisions.map((d) => ({
             tool: d.toolName,
@@ -757,8 +758,8 @@ function buildSummary(p: {
       parts.push(`allowed (risk ${p.risk}/100)`);
   }
 
-  if (p.withheld > 0) parts.push(`${p.withheld} document(s) withheld`);
-  if (p.deniedTools > 0) parts.push(`${p.deniedTools} tool call(s) refused`);
+  if (p.withheld > 0) parts.push(`${plural(p.withheld, "document")} withheld`);
+  if (p.deniedTools > 0) parts.push(`${plural(p.deniedTools, "tool call")} refused`);
 
   const s = parts.join("; ");
   return s.charAt(0).toUpperCase() + s.slice(1) + ".";

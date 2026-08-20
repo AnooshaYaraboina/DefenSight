@@ -54,6 +54,10 @@ export interface DashboardData {
   toolUsage: Array<{ name: string; slug: string; allowed: number; blocked: number; approval: number; riskTier: number }>;
   dataEvents: Array<{ bucket: string; label: string; pii: number; credentials: number; customer: number; other: number }>;
   topRisks: Array<{ id: string; ref: string; severity: Severity; title: string; riskScore: number; createdAt: Date; application: string }>;
+  /** Posture score per bucket, for the hero's inline trend. */
+  postureTrend: number[];
+  /** Per-tile series for the stat sparklines, keyed by tile key. */
+  sparklines: Record<string, number[]>;
 }
 
 function bucketsFor(hours: number) {
@@ -155,8 +159,15 @@ export async function getDashboardData(rangeKey?: string): Promise<DashboardData
     : null;
 
   /* ----------------------------------------------------------------- tiles */
+  /*
+   * Percentage change is only meaningful once the baseline is large enough to
+   * be stable. "+174%" against a prior window of 12 events reads as a crisis
+   * and carries almost no information; below the floor the tile shows the
+   * number alone.
+   */
+  const MIN_BASELINE = 25;
   const delta = (current: number, prior: number): number | null => {
-    if (prior === 0) return current === 0 ? 0 : null;
+    if (prior < MIN_BASELINE) return null;
     return Number((((current - prior) / prior) * 100).toFixed(1));
   };
 
@@ -311,10 +322,46 @@ export async function getDashboardData(rangeKey?: string): Promise<DashboardData
           .join(" + ") || `Elevated risk ${e.riskScore}/100`,
     }));
 
+  /*
+   * Per-bucket series for the hero trend and the tile sparklines.
+   *
+   * Computed from the same bucket boundaries as the charts so a spark and its
+   * chart can never tell different stories about the same window.
+   */
+  const postureTrend = buckets.map((b) => {
+    const inBucket = events.filter((e) => e.createdAt >= b.start && e.createdAt < b.end);
+    if (inBucket.length === 0) return securityScore;
+    return scoreFor(
+      inBucket.filter((e) => e.blocked).length,
+      inBucket.length,
+      inBucket.filter((e) => e.severity === "CRITICAL").length,
+      inBucket.reduce((s, e) => s + e.riskScore, 0) / inBucket.length,
+    );
+  });
+
+  const seriesFor = (predicate: (e: (typeof events)[number]) => boolean) =>
+    buckets.map(
+      (b) =>
+        events.filter((e) => e.createdAt >= b.start && e.createdAt < b.end && predicate(e)).length,
+    );
+
+  const sparklines: Record<string, number[]> = {
+    requests: seriesFor(() => true),
+    activeThreats: seriesFor((e) => threatsOf(e).length > 0),
+    blocked: seriesFor((e) => e.blocked),
+    injections: seriesFor((e) => threatsOf(e).some((t) => t.includes("INJECTION"))),
+    ragThreats: seriesFor((e) => threatsOf(e).some((t) => THREAT_META[t]?.family === "RAG")),
+    unauthorizedTools: seriesFor((e) =>
+      threatsOf(e).some((t) => t === "UNAUTHORIZED_TOOL_CALL" || t === "TOOL_ABUSE"),
+    ),
+  };
+
   return {
     range,
     securityScore,
     securityScoreDelta: priorScore === null ? null : securityScore - priorScore,
+    postureTrend,
+    sparklines,
     tiles,
     threatTrend,
     riskDistribution,

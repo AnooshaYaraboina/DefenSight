@@ -23,6 +23,7 @@ import type {
 } from "../types";
 import { fuseDetections, type FusedThreat } from "../detectors/fusion";
 import { redactSensitive } from "../sensitive";
+import { plural } from "../text";
 
 /** Which detection threat types each control type is responsible for. */
 const CONTROL_THREATS: Record<string, string[]> = {
@@ -174,7 +175,7 @@ export function evaluateGuardrails(input: GuardrailInput): GuardrailResult {
       if (matchingSensitive.length > 0) {
         const total = matchingSensitive.reduce((s, f) => s + f.count, 0);
         reasons.push(
-          `${total} value(s) matched: ${matchingSensitive.slice(0, 3).map((f) => f.type.toLowerCase().replace(/_/g, " ")).join(", ")}`,
+          `${plural(total, "value")} matched: ${matchingSensitive.slice(0, 3).map((f) => f.type.toLowerCase().replace(/_/g, " ")).join(", ")}`,
         );
       }
       if (leakDetail) reasons.push(leakDetail);

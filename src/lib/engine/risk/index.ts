@@ -32,6 +32,7 @@ import type {
 } from "../types";
 import type { FusionResult } from "../detectors/fusion";
 import { sensitivityWeight } from "../sensitive";
+import { plural, verb } from "../text";
 
 export interface RiskInputs {
   context: AnalysisContext;
@@ -113,7 +114,7 @@ export function assessRisk(inputs: RiskInputs): RiskAssessment {
     add(
       "threatConfidence",
       "Threat detection confidence",
-      `${fusion.threats.length} threat type(s) detected; the strongest is ${fusion.primary.threatType.replace(/_/g, " ").toLowerCase()} at ${(fusion.maxConfidence * 100).toFixed(0)}% confidence across ${fusion.primary.agreement} independent detection layer(s)`,
+      `${plural(fusion.threats.length, "threat type")} detected; the strongest is ${fusion.primary.threatType.replace(/_/g, " ").toLowerCase()} at ${(fusion.maxConfidence * 100).toFixed(0)}% confidence across ${plural(fusion.primary.agreement, "independent detection layer")}`,
       fusion.maxConfidence,
       RISK_WEIGHTS.threatConfidence,
     );
@@ -136,7 +137,7 @@ export function assessRisk(inputs: RiskInputs): RiskAssessment {
     add(
       "dataSensitivity",
       "Sensitive data exposure",
-      `${total} sensitive value(s) across ${categories.join(", ").toLowerCase()} detected in monitored channels`,
+      `${plural(total, "sensitive value")} across ${categories.join(", ").toLowerCase()} detected in monitored channels`,
       sensitivity,
       RISK_WEIGHTS.dataSensitivity,
     );
@@ -159,7 +160,7 @@ export function assessRisk(inputs: RiskInputs): RiskAssessment {
     add(
       "toolVolume",
       "Tool call volume",
-      `${inputs.toolCallCount} tool call(s) in a single request against a configured ceiling of ${cap}`,
+      `${plural(inputs.toolCallCount, "tool call")} in a single request against a configured ceiling of ${cap}`,
       Math.min(1, inputs.toolCallCount / Math.max(1, cap)),
       RISK_WEIGHTS.toolVolume,
     );
@@ -169,7 +170,7 @@ export function assessRisk(inputs: RiskInputs): RiskAssessment {
     add(
       "toolSensitivity",
       "Refused tool requests",
-      `${inputs.deniedToolCalls} tool request(s) were refused by the gateway — an agent attempting actions outside its grants`,
+      `${plural(inputs.deniedToolCalls, "tool request")} ${verb(inputs.deniedToolCalls, "was", "were")} refused by the gateway — an agent attempting actions outside its grants`,
       Math.min(1, inputs.deniedToolCalls / 2),
       RISK_WEIGHTS.toolSensitivity,
     );

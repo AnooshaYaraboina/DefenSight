@@ -25,6 +25,7 @@ import { semanticDetector } from "../detectors/semantic";
 import { fuseDetections, type FusionResult } from "../detectors/fusion";
 import { scanSensitive, sensitivityWeight } from "../sensitive";
 import type { SensitiveFinding } from "../types";
+import { plural } from "../text";
 
 export type ScanStatus = "CLEAN" | "SUSPICIOUS" | "MALICIOUS";
 
@@ -73,7 +74,7 @@ export function scanDocument(input: DocumentScanInput): DocumentScanResult {
     }
     if (normalization.mixedScriptWords.length > 0) {
       parts.push(
-        `${normalization.mixedScriptWords.length} word(s) mixing alphabets (${normalization.mixedScriptWords.slice(0, 3).join(", ")})`,
+        `${plural(normalization.mixedScriptWords.length, "word")} mixing alphabets (${normalization.mixedScriptWords.slice(0, 3).join(", ")})`,
       );
     }
     if (normalization.decodes.length > 0) {

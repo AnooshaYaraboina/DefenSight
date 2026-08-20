@@ -147,18 +147,35 @@ export function ChartTooltip({
   );
 }
 
-/** Tracks the plot area size so charts can be drawn in real pixels. */
+/**
+ * Tracks the plot area size so charts can be drawn in real pixels.
+ *
+ * Measures synchronously on mount via useLayoutEffect *before* subscribing to
+ * ResizeObserver. Waiting for the observer alone left charts blank on first
+ * paint — the observer can fire after the first meaningful paint, so a page
+ * would render its legend and axes over empty space until something happened
+ * to resize the container.
+ */
 export function useChartSize<T extends HTMLElement>() {
   const ref = React.useRef<T>(null);
   const [size, setSize] = React.useState({ width: 0, height: 0 });
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
-    const observer = new ResizeObserver((entries) => {
-      const box = entries[0]?.contentRect;
-      if (box) setSize({ width: box.width, height: box.height });
-    });
+
+    const measure = () => {
+      const box = element.getBoundingClientRect();
+      setSize((prev) =>
+        Math.abs(prev.width - box.width) < 0.5 && Math.abs(prev.height - box.height) < 0.5
+          ? prev
+          : { width: box.width, height: box.height },
+      );
+    };
+
+    measure();
+
+    const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
   }, []);

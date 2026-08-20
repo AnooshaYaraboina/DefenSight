@@ -88,14 +88,15 @@ export default async function IncidentDetailPage({
       </div>
 
       <PageHeader
-        title={
-          <span className="flex flex-wrap items-center gap-2.5">
-            <span className="font-mono text-base">{incident.ref}</span>
-            <SeverityBadge severity={incident.severity} />
-            <IncidentStatusBadge status={incident.status} />
+        eyebrow={
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[11px] text-ink-3">{incident.ref}</span>
+            <SeverityBadge severity={incident.severity} size="xs" />
+            <IncidentStatusBadge status={incident.status} size="xs" />
           </span>
         }
-        description={incident.title}
+        title={incident.title}
+        description={`Opened ${formatRelative(incident.openedAt)}${incident.assignedTo ? ` · assigned to ${incident.assignedTo.name}` : " · unassigned"}`}
         actions={
           <IncidentActions
             incidentId={incident.id}

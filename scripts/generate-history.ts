@@ -309,6 +309,102 @@ async function main() {
   }
   console.log(`${principals.length} principals`);
 
+  /* ------------------------------------------------- incident lifecycle */
+  /*
+   * Work the incident queue the way a real team would.
+   *
+   * Leaving every historical incident open produced a console showing 63 open
+   * cases — an estate that looks abandoned rather than defended, and a
+   * dashboard whose "needs attention" panel is unreadable. Older incidents are
+   * resolved or contained, leaving a realistic handful of live work.
+   */
+  process.stdout.write("  working the incident queue".padEnd(44, ".") + " ");
+  const allIncidents = await prisma.incident.findMany({
+    orderBy: { openedAt: "desc" },
+    select: { id: true, openedAt: true, severity: true },
+  });
+  const analystIds = (
+    await prisma.user.findMany({
+      where: { role: { in: ["SECURITY_ADMIN", "SECURITY_ANALYST"] } },
+      select: { id: true, name: true },
+    })
+  );
+
+  let resolved = 0;
+  let contained = 0;
+  let investigating = 0;
+
+  for (const [index, incident] of allIncidents.entries()) {
+    const ageHours = (Date.now() - incident.openedAt.getTime()) / 3600_000;
+    const analyst = analystIds[index % analystIds.length];
+
+    // Newest few stay open; everything older has been worked.
+    let status: "OPEN" | "INVESTIGATING" | "CONTAINED" | "RESOLVED";
+    if (index < 3) status = "OPEN";
+    else if (index < 7) status = "INVESTIGATING";
+    else if (ageHours < 36) status = "CONTAINED";
+    else status = "RESOLVED";
+
+    if (status === "OPEN") continue;
+
+    const containedAt = new Date(incident.openedAt.getTime() + (0.5 + rand() * 3) * 3600_000);
+    const resolvedAt = new Date(containedAt.getTime() + (1 + rand() * 8) * 3600_000);
+
+    await prisma.incident.update({
+      where: { id: incident.id },
+      data: {
+        status,
+        assignedToId: analyst.id,
+        containedAt: status === "CONTAINED" || status === "RESOLVED" ? containedAt : null,
+        resolvedAt: status === "RESOLVED" ? resolvedAt : null,
+        resolution:
+          status === "RESOLVED"
+            ? "Attack was blocked by the pipeline before any data left the trust boundary. Source reviewed, agent grants confirmed appropriate, no further action required."
+            : null,
+      },
+    });
+
+    await prisma.incidentTimelineEntry.create({
+      data: {
+        incidentId: incident.id,
+        kind: "STATUS_CHANGE",
+        actor: analyst.name,
+        message:
+          status === "RESOLVED"
+            ? "Closed after review. The attack was stopped by automated controls; no manual containment was required."
+            : status === "CONTAINED"
+              ? "Threat neutralised. Verification and source review in progress."
+              : "Triaged and assigned. Investigation under way.",
+        createdAt: status === "RESOLVED" ? resolvedAt : containedAt,
+      },
+    });
+
+    if (status === "RESOLVED") resolved++;
+    else if (status === "CONTAINED") contained++;
+    else investigating++;
+  }
+
+  // Alerts attached to closed incidents are acknowledged too.
+  const closed = await prisma.incident.findMany({
+    where: { status: { in: ["CONTAINED", "RESOLVED"] } },
+    select: { id: true },
+  });
+  await prisma.alert.updateMany({
+    where: { incidentId: { in: closed.map((c) => c.id) } },
+    data: { acknowledged: true, acknowledgedById: analystIds[0]?.id, acknowledgedAt: new Date() },
+  });
+  // Plus the routine older ones an on-call would have cleared.
+  const staleAlerts = await prisma.alert.findMany({
+    where: { acknowledged: false, createdAt: { lt: new Date(Date.now() - 36 * 3600_000) } },
+    select: { id: true },
+  });
+  await prisma.alert.updateMany({
+    where: { id: { in: staleAlerts.map((a) => a.id) } },
+    data: { acknowledged: true, acknowledgedById: analystIds[0]?.id, acknowledgedAt: new Date() },
+  });
+
+  console.log(`${resolved} resolved · ${contained} contained · ${investigating} investigating · 3 open`);
+
   /* -------------------------------------------------- hourly snapshots */
   process.stdout.write("  building metric snapshots".padEnd(44, ".") + " ");
   await prisma.metricSnapshot.deleteMany();

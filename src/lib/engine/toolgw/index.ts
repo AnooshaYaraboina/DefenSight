@@ -22,6 +22,7 @@ import { normalize } from "../normalize";
 import { scanSensitive } from "../sensitive";
 import { scanFamilies } from "../detectors/lexical";
 import { validateAgainstSchema } from "./schema";
+import { plural } from "../text";
 
 export interface GatewayInput {
   agent: AgentContext;
@@ -304,7 +305,7 @@ export function authorizeToolCalls(input: GatewayInput): GatewayResult {
         label: "Destinations are on the allowlist",
         passed: blockedDestinations.length === 0,
         detail: blockedDestinations.length === 0
-          ? `All ${destinations.length} destination(s) are on ${tool.name}'s allowlist.`
+          ? `All ${plural(destinations.length, "destination")} are on ${tool.name}'s allowlist.`
           : allowed.length === 0
             ? `${tool.name} has no egress allowlist configured, so outbound destinations (${blockedDestinations.slice(0, 3).join(", ")}) cannot be permitted.`
             : `Destination(s) ${blockedDestinations.slice(0, 3).join(", ")} are not on ${tool.name}'s allowlist (${allowed.join(", ")}).`,
@@ -323,7 +324,7 @@ export function authorizeToolCalls(input: GatewayInput): GatewayResult {
       label: "Within rate limit",
       passed: withinRate,
       detail: withinRate
-        ? `${windowCount} call(s) in the current window against a limit of ${tool.rateLimitPerMinute}/min.`
+        ? `${plural(windowCount, "call")} in the current window against a limit of ${tool.rateLimitPerMinute}/min.`
         : `Rate limit exceeded: ${windowCount} calls against a limit of ${tool.rateLimitPerMinute}/min.`,
       severity: "MEDIUM",
     });

@@ -4,6 +4,7 @@ import { jsonArray, jsonObject } from "@/lib/db/json";
 import { THREAT_META, type Severity, type ThreatType } from "@/lib/engine/taxonomy";
 import type { RiskFactor, StageTrace } from "@/lib/engine/types";
 import { complete, isConfigured, MODELS } from "./provider";
+import { plural } from "@/lib/engine/text";
 
 /**
  * AI-powered security automation (§21).
@@ -363,7 +364,7 @@ export async function correlateEvents(eventId: string, limit = 8): Promise<Corre
 
       const minutesApart = Math.abs(c.createdAt.getTime() - anchor.createdAt.getTime()) / 60_000;
       if (minutesApart <= 15) {
-        reasons.push(`within ${Math.max(1, Math.round(minutesApart))} minute(s)`);
+        reasons.push(`within ${plural(Math.max(1, Math.round(minutesApart)), "minute")}`);
         strength += 0.2;
       } else if (minutesApart <= 60) {
         strength += 0.08;

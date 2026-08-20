@@ -1,34 +1,42 @@
 import { ShieldCheck } from "lucide-react";
+import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/layout/page-header";
 import { isConfigured } from "@/lib/ai/provider";
 import { AssistantChat } from "@/components/security/assistant-chat";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "AI Security Assistant" };
 
-export default function AssistantPage() {
+export default async function AssistantPage() {
+  const [events, incidents, quarantined, approvals] = await Promise.all([
+    prisma.securityEvent.count({ where: { createdAt: { gte: new Date(Date.now() - 24 * 3600_000) } } }),
+    prisma.incident.count({ where: { status: { in: ["OPEN", "INVESTIGATING"] } } }),
+    prisma.document.count({ where: { quarantined: true } }),
+    prisma.toolApproval.count({ where: { status: "PENDING" } }),
+  ]);
+
   return (
-    <div className="flex h-[calc(100dvh-8rem)] flex-col">
+    <div className="flex h-[calc(100dvh-7rem)] flex-col">
       <PageHeader
         title="AI Security Assistant"
-        description="Ask questions about your security data in plain language."
+        description="Ask about your security data in plain language."
+        actions={
+          <Tooltip content="The assistant receives a pre-computed, read-only snapshot rather than database access. An assistant that can query freely is an injection target, and this one is deliberately not one.">
+            <span className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] text-ink-3">
+              <ShieldCheck className="size-3.5 text-brand" />
+              Read-only · cannot take actions
+            </span>
+          </Tooltip>
+        }
       />
 
-      <Card className="mb-4 shrink-0 border-brand/20 bg-brand-dim/10">
-        <CardContent className="flex gap-3 py-3">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand" />
-          <p className="text-[11px] leading-relaxed text-ink-2">
-            The assistant is given a pre-computed, read-only snapshot rather than database access.
-            An assistant that can query freely is an injection target, and this one is deliberately
-            not one — it reports over recorded data and cannot take actions, change configuration,
-            or make security decisions.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
-        <AssistantChat configured={isConfigured()} />
+      <Card className="flex min-h-0 flex-1 flex-col p-5">
+        <AssistantChat
+          configured={isConfigured()}
+          context={{ events, incidents, quarantined, approvals }}
+        />
       </Card>
     </div>
   );
