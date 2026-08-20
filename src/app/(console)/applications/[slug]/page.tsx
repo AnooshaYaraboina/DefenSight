@@ -73,7 +73,7 @@ export default async function ApplicationDetailPage({
                   Agents
                 </CardTitle>
                 <p className="mt-0.5 text-xs text-ink-3">
-                  Each agent's grants define the blast radius if this application is manipulated.
+                  Each agent&apos;s grants define the blast radius if this application is manipulated.
                 </p>
               </div>
             </CardHeader>

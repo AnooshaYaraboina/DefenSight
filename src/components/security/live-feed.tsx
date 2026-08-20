@@ -34,17 +34,20 @@ export function LiveFeed({
   className?: string;
 }) {
   const { events, state, received } = useLiveEvents({ limit });
-  const [paused, setPaused] = React.useState(false);
-  const frozen = React.useRef<typeof events>([]);
 
-  // Snapshot on pause so the visible list is stable while the stream continues.
-  React.useEffect(() => {
-    if (paused) frozen.current = events;
-  }, [paused]); // eslint-disable-line react-hooks/exhaustive-deps
+  /*
+   * Pausing freezes the *view*, never the stream.
+   *
+   * The snapshot lives in state rather than a ref: a ref read during render is
+   * not tracked by React, so the "queued" count could show a stale value while
+   * the list beside it had already moved on.
+   */
+  const [frozen, setFrozen] = React.useState<LiveSecurityEvent[] | null>(null);
+  const paused = frozen !== null;
 
-  const live = paused ? frozen.current : events;
+  const live = frozen ?? events;
   const rows: LiveSecurityEvent[] = live.length > 0 ? live : initialEvents;
-  const pendingWhilePaused = paused ? Math.max(0, events.length - frozen.current.length) : 0;
+  const pendingWhilePaused = frozen ? Math.max(0, events.length - frozen.length) : 0;
 
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
@@ -74,7 +77,7 @@ export function LiveFeed({
           <Button
             variant="ghost"
             size="xs"
-            onClick={() => setPaused((p) => !p)}
+            onClick={() => setFrozen((f) => (f ? null : events))}
             aria-label={paused ? "Resume live feed" : "Pause live feed"}
           >
             {paused ? <Play /> : <Pause />}

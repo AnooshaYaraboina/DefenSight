@@ -36,17 +36,31 @@ export function Sidebar({
   badges?: NavBadgeCounts;
 }) {
   const pathname = usePathname();
+  /*
+   * The collapse preference is persisted so the console remembers how the
+   * analyst likes to work.
+   *
+   * It cannot be read during the initial render — the server has no
+   * localStorage, and doing so would produce a hydration mismatch — so the
+   * restore is deferred by a frame rather than applied synchronously in an
+   * effect body, and the write is skipped until the restore has happened so it
+   * cannot clobber the stored value with the default.
+   */
   const [collapsed, setCollapsed] = React.useState(false);
+  const [restored, setRestored] = React.useState(false);
 
-  // Persist the collapse preference so the console remembers how the analyst
-  // likes to work between sessions.
   React.useEffect(() => {
-    const saved = localStorage.getItem("defensight:sidebar-collapsed");
-    if (saved === "1") setCollapsed(true);
+    const id = requestAnimationFrame(() => {
+      setCollapsed(localStorage.getItem("defensight:sidebar-collapsed") === "1");
+      setRestored(true);
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
+
   React.useEffect(() => {
+    if (!restored) return;
     localStorage.setItem("defensight:sidebar-collapsed", collapsed ? "1" : "0");
-  }, [collapsed]);
+  }, [collapsed, restored]);
 
   const groups = React.useMemo(() => visibleNav(role), [role]);
 

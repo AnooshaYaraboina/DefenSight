@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { Database, FileWarning, HardDrive, Library, ShieldOff } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { getRagOverview } from "@/lib/queries/rag";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Meter } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -78,7 +77,6 @@ export default async function RagPage({
               vectorStore: d.vectorStore?.name ?? null,
               topThreat: d.scanSummary?.threats?.[0]?.type ?? null,
             }))}
-            sources={sources.map((s) => ({ id: s.id, name: s.name }))}
             counts={counts}
           />
         </TabsContent>

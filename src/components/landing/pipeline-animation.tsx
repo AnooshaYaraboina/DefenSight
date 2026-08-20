@@ -39,8 +39,8 @@ export function PipelineAnimation({ className }: { className?: string }) {
     // rather than cycling.
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
-      setActive(STAGES.length - 1);
-      return;
+      const id = requestAnimationFrame(() => setActive(STAGES.length - 1));
+      return () => cancelAnimationFrame(id);
     }
     if (paused) return;
     const timer = setInterval(() => setActive((i) => (i + 1) % STAGES.length), 1900);

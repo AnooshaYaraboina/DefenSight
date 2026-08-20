@@ -47,11 +47,9 @@ const STATUS_FILTERS = [
 
 export function DocumentTable({
   documents,
-  sources,
   counts,
 }: {
   documents: DocumentRow[];
-  sources: Array<{ id: string; name: string }>;
   counts: Record<string, number>;
 }) {
   const router = useRouter();

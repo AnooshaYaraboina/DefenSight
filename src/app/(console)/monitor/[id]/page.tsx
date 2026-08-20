@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Bot, Boxes, FileText, Gauge, Layers, Lock, ScanSearch, ShieldAlert, Siren, Wrench,
+  ArrowLeft, Bot, FileText, Gauge, Layers, Lock, ScanSearch, ShieldAlert, Siren, Wrench,
 } from "lucide-react";
 import { getEventDetail } from "@/lib/queries/monitor";
 import { PageHeader } from "@/components/layout/page-header";

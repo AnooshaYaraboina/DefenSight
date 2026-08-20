@@ -149,7 +149,7 @@ export function DocumentUpload({ sources }: { sources: Array<{ id: string; name:
                     </SelectContent>
                   </Select>
                   <p className="mt-1 text-[10px] text-ink-4">
-                    Determines the document's trust ceiling.
+                    Determines the document&apos;s trust ceiling.
                   </p>
                 </div>
 

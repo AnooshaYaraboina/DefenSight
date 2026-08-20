@@ -32,6 +32,7 @@ export function ChartFrame({
   className?: string;
   height?: number;
 }) {
+  void height; // consumed by the caller's own container sizing
   return (
     <figure className={cn("flex min-w-0 flex-col", className)}>
       <figcaption className="mb-3 flex items-start justify-between gap-3">
@@ -172,12 +173,11 @@ export function useChartSize<T extends HTMLElement>() {
 export function GridLines({
   ticks,
   width,
-  height,
   padLeft,
 }: {
+  /** Y positions, already in pixels. */
   ticks: number[];
   width: number;
-  height: number;
   padLeft: number;
 }) {
   return (

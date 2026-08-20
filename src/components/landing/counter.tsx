@@ -32,8 +32,10 @@ export function Counter({
     if (!element) return;
 
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-      setDisplay(value);
-      return;
+      // Deferred so the state update is not synchronous inside the effect body,
+      // which would force a second render pass before paint.
+      const id = requestAnimationFrame(() => setDisplay(value));
+      return () => cancelAnimationFrame(id);
     }
 
     const observer = new IntersectionObserver(

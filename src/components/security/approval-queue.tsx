@@ -45,6 +45,23 @@ export function ApprovalQueue({ approvals }: { approvals: ApprovalRow[] }) {
   const [pending, setPending] = React.useState<{ id: string; decision: "APPROVED" | "DENIED" } | null>(null);
   const [justification, setJustification] = React.useState("");
 
+  /*
+   * "Expiring soon" depends on the current time, which the server and the
+   * client do not agree on. Computing it during render produces a hydration
+   * mismatch, so it is resolved after mount and refreshed each minute.
+   *
+   * Declared before any early return: hooks must run unconditionally.
+   */
+  const [now, setNow] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    const id = requestAnimationFrame(() => setNow(Date.now()));
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => {
+      cancelAnimationFrame(id);
+      clearInterval(timer);
+    };
+  }, []);
+
   async function decide() {
     if (!pending) return;
     const res = await fetch("/api/approvals", {
@@ -76,7 +93,7 @@ export function ApprovalQueue({ approvals }: { approvals: ApprovalRow[] }) {
     <>
       <ul className="space-y-3">
         {approvals.map((a) => {
-          const expiring = a.expiresAt.getTime() - Date.now() < 3600_000;
+          const expiring = now !== null && a.expiresAt.getTime() - now < 3600_000;
           return (
             <li
               key={a.id}

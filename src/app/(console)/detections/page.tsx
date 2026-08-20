@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Binary, Braces, Fingerprint, Radar, ScanSearch, ShieldCheck, Sigma } from "lucide-react";
+import { Binary, Braces, Fingerprint, Radar, ShieldCheck, Sigma } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { prisma } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { PATTERN_FAMILIES, MITIGATIONS } from "@/lib/engine/detectors";
 import { ATTACK_CORPUS, BENIGN_CORPUS } from "@/lib/engine/detectors/corpus";
 import { DETECTORS } from "@/lib/engine/detectors";
 import type { ThreatType } from "@/lib/engine/taxonomy";
+import { trailingWindow } from "@/lib/queries/window";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Detection Engine" };
@@ -27,7 +28,7 @@ const LAYER_META: Record<string, { label: string; icon: React.ComponentType<{ cl
 };
 
 export default async function DetectionsPage() {
-  const since = new Date(Date.now() - 7 * 24 * 3600_000);
+  const since = trailingWindow(7);
 
   const [byLayer, byDetector, byThreat, recent, total] = await Promise.all([
     prisma.detection.groupBy({

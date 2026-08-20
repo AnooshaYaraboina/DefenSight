@@ -16,15 +16,16 @@ export type ConnectionState = "connecting" | "live" | "reconnecting" | "offline"
 export function useLiveEvents(options: { limit?: number; enabled?: boolean } = {}) {
   const { limit = 60, enabled = true } = options;
   const [events, setEvents] = React.useState<LiveSecurityEvent[]>([]);
-  const [state, setState] = React.useState<ConnectionState>("connecting");
+  // Derived from `enabled` rather than set in an effect: calling setState
+  // synchronously in an effect body triggers a second render pass before paint.
+  const [state, setState] = React.useState<ConnectionState>(
+    enabled ? "connecting" : "offline",
+  );
   const [received, setReceived] = React.useState(0);
   const [lastAt, setLastAt] = React.useState<Date | null>(null);
 
   React.useEffect(() => {
-    if (!enabled) {
-      setState("offline");
-      return;
-    }
+    if (!enabled) return;
 
     const source = new EventSource("/api/stream");
 

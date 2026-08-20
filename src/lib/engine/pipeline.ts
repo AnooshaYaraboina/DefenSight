@@ -274,7 +274,7 @@ export function analyze(context: AnalysisContext): AnalysisResult {
 
   /* ========================================== 5. THREAT DETECTION ====== */
 
-  const fusion = stage("THREAT_DETECTION", "Detection Engine", () => {
+  stage("THREAT_DETECTION", "Detection Engine", () => {
     const fused = fuseDetections(detections);
     return {
       summary: fused.primary
@@ -611,8 +611,6 @@ export function analyze(context: AnalysisContext): AnalysisResult {
     // other control fired.
     withheldRetrievals.length > 0 ? "REDACT" : "ALLOW",
   );
-
-  const blocked = decision === "BLOCK";
 
   /* ========================================= 12. OUTPUT GUARDRAILS ====== */
 

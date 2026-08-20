@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { AttackChain } from "./attack-chain";
 import { RiskBreakdown } from "./risk-breakdown";
-import { DecisionBadge, SeverityBadge, ThreatBadge } from "./indicators";
+import { DecisionBadge, ThreatBadge } from "./indicators";
 import { RiskPill } from "./risk-score";
 import { CodePanel } from "./evidence";
 import { formatDuration } from "@/lib/utils/format";
@@ -273,7 +273,7 @@ export function SimulatorConsole({ scenarios }: { scenarios: SimulatorScenario[]
         </Card>
 
         {result ? (
-          <ResultPanel scenario={scenario} result={result} />
+          <ResultPanel result={result} />
         ) : (
           <Card className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
             <div className="flex size-11 items-center justify-center rounded-full border border-line bg-surface-2">
@@ -298,13 +298,7 @@ export function SimulatorConsole({ scenarios }: { scenarios: SimulatorScenario[]
 
 const FLOW = ["Attack", "Detection", "Risk Score", "Defense", "Final Result"];
 
-function ResultPanel({
-  scenario,
-  result,
-}: {
-  scenario: SimulatorScenario;
-  result: RunResult;
-}) {
+function ResultPanel({ result }: { result: RunResult }) {
   const r = result.result;
 
   return (

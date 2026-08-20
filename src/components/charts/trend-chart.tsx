@@ -57,20 +57,27 @@ export function TrendChart({
   const xFor = (i: number) =>
     PAD_LEFT + (data.length <= 1 ? plotWidth / 2 : (i / (data.length - 1)) * plotWidth);
 
-  const areaPath = React.useMemo(() => {
-    if (data.length === 0 || plotWidth <= 0) return "";
-    const line = data.map((d, i) => `${i === 0 ? "M" : "L"}${xFor(i)},${yFor(d.total)}`).join("");
-    return `${line}L${xFor(data.length - 1)},${PAD_TOP + plotHeight}L${xFor(0)},${PAD_TOP + plotHeight}Z`;
-  }, [data, plotWidth, max, width]);
+  /*
+   * All three paths derive from the same geometry, computed inline.
+   *
+   * They were three separate useMemo calls, each depending on `xFor`/`yFor` —
+   * helpers recreated every render, so the dependency lists were inaccurate and
+   * the memoisation bought nothing. The React Compiler memoises this
+   * automatically and correctly, which a hand-written dependency array on
+   * closures cannot.
+   */
+  const hasGeometry = data.length > 0 && plotWidth > 0;
+  const baseline = PAD_TOP + plotHeight;
 
-  const totalLine = React.useMemo(
-    () => data.map((d, i) => `${i === 0 ? "M" : "L"}${xFor(i)},${yFor(d.total)}`).join(""),
-    [data, plotWidth, max, width],
-  );
-  const criticalLine = React.useMemo(
-    () => data.map((d, i) => `${i === 0 ? "M" : "L"}${xFor(i)},${yFor(d.critical)}`).join(""),
-    [data, plotWidth, max, width],
-  );
+  const totalLine = hasGeometry
+    ? data.map((d, i) => `${i === 0 ? "M" : "L"}${xFor(i)},${yFor(d.total)}`).join("")
+    : "";
+  const criticalLine = hasGeometry
+    ? data.map((d, i) => `${i === 0 ? "M" : "L"}${xFor(i)},${yFor(d.critical)}`).join("")
+    : "";
+  const areaPath = hasGeometry
+    ? `${totalLine}L${xFor(data.length - 1)},${baseline}L${xFor(0)},${baseline}Z`
+    : "";
 
   const totals = data.reduce((s, d) => s + d.total, 0);
   const criticals = data.reduce((s, d) => s + d.critical, 0);
@@ -117,7 +124,7 @@ export function TrendChart({
               </linearGradient>
             </defs>
 
-            <GridLines ticks={tickValues.map(yFor)} width={width - 6} height={height} padLeft={PAD_LEFT} />
+            <GridLines ticks={tickValues.map(yFor)} width={width - 6} padLeft={PAD_LEFT} />
             <YAxisLabels values={tickValues} positions={tickValues.map(yFor)} padLeft={PAD_LEFT} />
 
             <path d={areaPath} fill="url(#trend-fill)" />

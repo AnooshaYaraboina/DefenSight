@@ -3,7 +3,6 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getRiskEngineData } from "@/lib/queries/defense";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Meter } from "@/components/ui/progress";
-import { Tooltip } from "@/components/ui/tooltip";
 import { StatTile } from "@/components/security/stat-tile";
 import { OrdinalDistribution } from "@/components/charts/bar-charts";
 import { RISK_WEIGHTS } from "@/lib/engine/risk";
