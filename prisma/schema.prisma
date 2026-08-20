@@ -1,0 +1,906 @@
+// =============================================================================
+// DefenSight — AI Security Defense & Monitoring
+//
+// The schema mirrors the security taxonomy in src/lib/engine/taxonomy.ts. Enums
+// are declared here rather than as loose strings so a threat type cannot drift
+// between the engine that detects it and the row that records it.
+//
+// SQLite is used so the application runs with no infrastructure. Structured
+// payloads (evidence, stage traces, risk factors, tool arguments) are stored as
+// Json; the connector does not support primitive lists, so multi-value fields
+// are Json arrays with typed accessors in src/lib/db/.
+// =============================================================================
+
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// =============================================================================
+// Enums — the security vocabulary
+// =============================================================================
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum Decision {
+  ALLOW
+  WARN
+  REDACT
+  REQUIRE_APPROVAL
+  BLOCK
+}
+
+enum Role {
+  SECURITY_ADMIN
+  SECURITY_ANALYST
+  VIEWER
+}
+
+enum Classification {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  RESTRICTED
+}
+
+enum IncidentStatus {
+  OPEN
+  INVESTIGATING
+  CONTAINED
+  RESOLVED
+}
+
+enum Channel {
+  USER_INPUT
+  SYSTEM_PROMPT
+  RAG_CONTEXT
+  TOOL_ARGUMENTS
+  TOOL_RESULT
+  MODEL_OUTPUT
+  AGENT_MEMORY
+}
+
+enum RiskLevel {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum EntityStatus {
+  ACTIVE
+  PAUSED
+  SUSPENDED
+  RETIRED
+}
+
+enum ScanStatus {
+  PENDING
+  SCANNING
+  CLEAN
+  SUSPICIOUS
+  MALICIOUS
+  FAILED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  DENIED
+  EXPIRED
+}
+
+enum GuardrailDirection {
+  INPUT
+  OUTPUT
+}
+
+enum ToolCategory {
+  DATABASE
+  API
+  SEARCH
+  FILE
+  EMAIL
+  BUSINESS
+  CODE
+  MESSAGING
+}
+
+enum ToolOperation {
+  READ
+  WRITE
+  DELETE
+  EXECUTE
+}
+
+// =============================================================================
+// Identity & access  (§24)
+// =============================================================================
+
+model User {
+  id         String         @id @default(cuid())
+  name       String
+  email      String         @unique
+  role       Role           @default(VIEWER)
+  department String
+  /// Highest data classification this person may be shown.
+  clearance  Classification @default(INTERNAL)
+  status     EntityStatus   @default(ACTIVE)
+  /// Password hash: scrypt, stored as `salt:derivedKey` in hex.
+  password   String
+
+  /// Rolling behavioural risk for the principal (§16 "user privilege" signal).
+  riskScore   Int       @default(0)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  sessions          Session[]
+  events            SecurityEvent[]
+  auditLogs         AuditLog[]
+  assignedIncidents Incident[]      @relation("IncidentAssignee")
+  uploadedDocuments Document[]      @relation("DocumentUploader")
+  approvalDecisions ToolApproval[]  @relation("ApprovalDecider")
+  acknowledgedAlerts Alert[]        @relation("AlertAcknowledger")
+
+  @@index([role])
+  @@index([riskScore])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// =============================================================================
+// AI estate  (§8, §9)
+// =============================================================================
+
+model LlmModel {
+  id       String @id @default(cuid())
+  name     String @unique
+  provider String
+  version  String
+  contextWindow Int @default(128000)
+  /// Models handling regulated data get a stricter baseline risk contribution.
+  sensitivityTier Int @default(1)
+
+  applications AiApplication[]
+  agents       Agent[]
+  events       SecurityEvent[]
+}
+
+model AiApplication {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  description String
+  environment String       @default("production")
+  owner       String
+  ownerEmail  String
+  status      EntityStatus @default(ACTIVE)
+
+  modelId String
+  model   LlmModel @relation(fields: [modelId], references: [id])
+
+  /// 0-100 posture score, recomputed from live event history.
+  securityScore  Int      @default(100)
+  systemPrompt   String   @default("")
+  lastActivityAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  agents       Agent[]
+  events       SecurityEvent[]
+  incidents    Incident[]
+  vectorStores VectorStoreOnApp[]
+
+  @@index([status])
+  @@index([securityScore])
+}
+
+model Agent {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  purpose     String
+  description String
+  status      EntityStatus @default(ACTIVE)
+
+  applicationId String
+  application   AiApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  modelId String
+  model   LlmModel @relation(fields: [modelId], references: [id])
+
+  systemPrompt String @default("")
+
+  riskLevel     RiskLevel @default(LOW)
+  securityScore Int       @default(100)
+
+  /// Guardrails on the agent's own action surface (§14, §20).
+  maxToolCallsPerRequest Int @default(5)
+  maxTokensPerRequest    Int @default(8000)
+
+  /// Highest classification this agent may retrieve (§10 trust boundary).
+  dataClearance Classification @default(INTERNAL)
+
+  lastActivityAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  permissions AgentPermission[]
+  toolGrants  ToolGrant[]
+  events      SecurityEvent[]
+  toolCalls   ToolCall[]
+  incidents   Incident[]
+  baselines   Baseline[]
+
+  @@index([applicationId])
+  @@index([riskLevel])
+  @@index([status])
+}
+
+/// Declared capability of an agent. Compared against observed behaviour to
+/// surface over-provisioning (§14 "excessive permissions").
+model AgentPermission {
+  id       String  @id @default(cuid())
+  agentId  String
+  agent    Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  resource String
+  /// Json array of ToolOperation values.
+  actions  Json
+  granted  Boolean @default(true)
+  justification String @default("")
+  /// Times this permission was actually exercised — near-zero use on a broad
+  /// grant is the signal for a least-privilege finding.
+  useCount Int @default(0)
+
+  @@unique([agentId, resource])
+  @@index([agentId])
+}
+
+// =============================================================================
+// RAG security  (§10, §11)
+// =============================================================================
+
+model DataSource {
+  id       String       @id @default(cuid())
+  name     String
+  type     String
+  status   EntityStatus @default(ACTIVE)
+  owner    String
+  /// 0-100. Externally-sourced content starts low and can never be implicitly
+  /// promoted — the core assumption behind indirect-injection defence.
+  trustLevel  Int      @default(50)
+  isExternal  Boolean  @default(false)
+  description String   @default("")
+  lastSyncAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  documents Document[]
+
+  @@index([trustLevel])
+}
+
+model VectorStore {
+  id         String @id @default(cuid())
+  name       String
+  provider   String
+  indexName  String
+  dimensions Int    @default(1536)
+  status     EntityStatus @default(ACTIVE)
+  createdAt  DateTime @default(now())
+
+  documents    Document[]
+  applications VectorStoreOnApp[]
+}
+
+model VectorStoreOnApp {
+  applicationId String
+  vectorStoreId String
+  application   AiApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  vectorStore   VectorStore   @relation(fields: [vectorStoreId], references: [id], onDelete: Cascade)
+
+  @@id([applicationId, vectorStoreId])
+}
+
+model Document {
+  id      String @id @default(cuid())
+  title   String
+  /// Full text. Retained so the scanner can be re-run when detectors improve.
+  content String
+
+  sourceId String
+  source   DataSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  vectorStoreId String?
+  vectorStore   VectorStore? @relation(fields: [vectorStoreId], references: [id])
+
+  owner          String
+  classification Classification @default(INTERNAL)
+
+  /// 0-100 composite of source trust, scan result and provenance.
+  trustScore Int       @default(50)
+  riskLevel  RiskLevel @default(LOW)
+
+  scanStatus ScanStatus @default(PENDING)
+  /// Full scanner output: detectors run, layers fired, timings.
+  scanResult Json?
+  scannedAt  DateTime?
+
+  quarantined     Boolean   @default(false)
+  quarantineReason String?
+  quarantinedAt   DateTime?
+
+  contentHash String
+  sizeBytes   Int    @default(0)
+  chunkCount  Int    @default(1)
+  mimeType    String @default("text/plain")
+
+  uploadedById String?
+  uploadedBy   User?   @relation("DocumentUploader", fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  findings   DocumentFinding[]
+  retrievals RetrievalEvent[]
+
+  @@index([scanStatus])
+  @@index([quarantined])
+  @@index([riskLevel])
+  @@index([classification])
+}
+
+/// A specific reason a document was flagged, anchored to character offsets so
+/// the UI can highlight the exact passage (§11 "show why").
+model DocumentFinding {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  detectorId  String
+  threatType  String
+  severity    Severity
+  confidence  Float
+  /// The offending passage, already truncated for display.
+  snippet     String
+  offsetStart Int
+  offsetEnd   Int
+  explanation String
+  /// Detector-specific supporting data (decoded payload, matched category…).
+  evidence    Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([documentId])
+  @@index([severity])
+}
+
+/// One document surfaced by one retrieval. The join between RAG activity and
+/// the security event that consumed it.
+model RetrievalEvent {
+  id      String @id @default(cuid())
+  eventId String
+  event   SecurityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  query          String
+  similarity     Float
+  chunkIndex     Int     @default(0)
+  /// False when the retrieval was withheld from the model.
+  allowed        Boolean @default(true)
+  withheldReason String?
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+  @@index([documentId])
+}
+
+// =============================================================================
+// Tool security gateway  (§14)
+// =============================================================================
+
+model Tool {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  category    ToolCategory
+  description String
+  enabled     Boolean      @default(true)
+
+  /// Json array of ToolOperation the tool itself can perform.
+  operations Json
+
+  /// 1 (benign lookup) … 5 (irreversible external effect).
+  riskTier Int @default(1)
+
+  /// High-impact actions stop for a human (§14, §20).
+  requiresApproval Boolean @default(false)
+  approvalThreshold Int    @default(70)
+
+  rateLimitPerMinute Int @default(60)
+
+  /// JSON Schema for arguments. Enforced before execution, not after.
+  parameterSchema Json?
+
+  /// Destinations this tool may contact. Empty means no egress.
+  allowedDomains Json?
+
+  createdAt DateTime @default(now())
+
+  grants ToolGrant[]
+  calls  ToolCall[]
+
+  @@index([category])
+  @@index([riskTier])
+}
+
+/// Allowlist entry binding one agent to one tool with a specific operation set.
+/// Absence of a grant is a denial — the gateway defaults closed.
+model ToolGrant {
+  id      String @id @default(cuid())
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  toolId  String
+  tool    Tool   @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  /// Json array of permitted ToolOperation values.
+  operations Json
+  /// Explicit deny wins over any allow.
+  denied     Boolean @default(false)
+
+  maxCallsPerRequest Int @default(3)
+  justification      String @default("")
+  createdAt          DateTime @default(now())
+
+  @@unique([agentId, toolId])
+  @@index([agentId])
+}
+
+model ToolCall {
+  id      String @id @default(cuid())
+  eventId String?
+  event   SecurityEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  toolId String
+  tool   Tool   @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  operation ToolOperation
+  arguments Json
+
+  decision  Decision
+  riskScore Int      @default(0)
+  /// Ordered list of gateway checks with pass/fail — the audit trail for why
+  /// this call was permitted or refused.
+  checks    Json
+  reason    String
+
+  executed   Boolean   @default(false)
+  executedAt DateTime?
+  durationMs Int?
+  resultSummary String?
+
+  createdAt DateTime @default(now())
+
+  approval ToolApproval?
+
+  @@index([agentId])
+  @@index([toolId])
+  @@index([decision])
+  @@index([createdAt])
+}
+
+model ToolApproval {
+  id         String   @id @default(cuid())
+  toolCallId String   @unique
+  toolCall   ToolCall @relation(fields: [toolCallId], references: [id], onDelete: Cascade)
+
+  status        ApprovalStatus @default(PENDING)
+  requestedBy   String
+  reason        String
+  riskSummary   String         @default("")
+
+  decidedById String?
+  decidedBy   User?   @relation("ApprovalDecider", fields: [decidedById], references: [id])
+  decidedAt   DateTime?
+  justification String?
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([status])
+}
+
+// =============================================================================
+// The security event — the spine of the platform  (§7, §26)
+// =============================================================================
+
+model SecurityEvent {
+  id  String @id @default(cuid())
+  /// Human-facing reference, e.g. EVT-8F3A21.
+  ref String @unique
+
+  createdAt DateTime @default(now())
+
+  applicationId String?
+  application   AiApplication? @relation(fields: [applicationId], references: [id])
+
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  modelId String?
+  model   LlmModel? @relation(fields: [modelId], references: [id])
+
+  /// What the user asked for. The intent baseline for §9 divergence checks.
+  requestText  String
+  responseText String?
+  /// Response after output guardrails ran, when redaction changed it.
+  redactedResponse String?
+
+  riskScore Int
+  severity  Severity
+  decision  Decision
+
+  /// Json array of ThreatType strings, denormalised for fast filtering.
+  threatTypes Json
+
+  blocked  Boolean @default(false)
+  redacted Boolean @default(false)
+
+  detectionCount   Int @default(0)
+  sensitiveHitCount Int @default(0)
+  toolCallCount    Int @default(0)
+  retrievalCount   Int @default(0)
+
+  /// Explainable scoring breakdown: every factor, weight and contribution (§16).
+  riskFactors Json
+  /// Ordered pipeline trace powering the attack chain view (§18).
+  stageTrace  Json
+
+  latencyMs Int    @default(0)
+  sessionId String?
+  ipAddress String?
+  /// Set when this event was produced by the Attack Simulator (§19).
+  simulated Boolean @default(false)
+  scenarioKey String?
+
+  incidentId String?
+  incident   Incident? @relation(fields: [incidentId], references: [id])
+
+  detections     Detection[]
+  sensitiveHits  SensitiveHit[]
+  toolCalls      ToolCall[]
+  retrievals     RetrievalEvent[]
+  alerts         Alert[]
+
+  @@index([createdAt])
+  @@index([severity])
+  @@index([decision])
+  @@index([riskScore])
+  @@index([applicationId])
+  @@index([agentId])
+  @@index([userId])
+  @@index([incidentId])
+  @@index([simulated])
+}
+
+/// One detector firing on one event. Several detections per event is normal —
+/// the fusion step in the engine combines them into the final verdict.
+model Detection {
+  id      String        @id @default(cuid())
+  eventId String
+  event   SecurityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  detectorId String
+  /// Which analysis layer produced this: LEXICAL, STRUCTURAL, SEMANTIC,
+  /// BEHAVIORAL or LLM_ADJUDICATION.
+  layer      String
+  threatType String
+  channel    Channel
+
+  confidence Float
+  score      Int
+  severity   Severity
+
+  /// Analyst-readable reason this fired.
+  explanation String
+  /// Matched spans, decoded payloads, similarity neighbours, z-scores.
+  evidence    Json
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+  @@index([threatType])
+  @@index([detectorId])
+  @@index([severity])
+}
+
+/// Sensitive data located in a monitored channel (§15).
+model SensitiveHit {
+  id      String        @id @default(cuid())
+  eventId String
+  event   SecurityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  channel  Channel
+  type     String
+  category String
+  count    Int    @default(1)
+
+  action Decision
+  /// Masked example, e.g. "4111‑••••‑••••‑1111". Never the raw value.
+  maskedSample String
+  offsetStart  Int @default(0)
+  offsetEnd    Int @default(0)
+  confidence   Float @default(1)
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+  @@index([type])
+  @@index([channel])
+}
+
+// =============================================================================
+// Policies & guardrails  (§13, §20)
+// =============================================================================
+
+model Policy {
+  id          String @id @default(cuid())
+  key         String @unique
+  name        String
+  description String
+  category    String
+
+  enabled  Boolean @default(true)
+  /// Lower numbers evaluate first. Ties break on id for determinism.
+  priority Int     @default(100)
+
+  /// Declarative condition tree evaluated by the policy engine. Editable from
+  /// the UI so new policies never require a code change (§20).
+  condition Json
+  action    Decision
+  severity  Severity @default(MEDIUM)
+
+  /// Optional override of the tool gateway's approval requirement.
+  requiresApproval Boolean @default(false)
+
+  hitCount    Int      @default(0)
+  lastHitAt   DateTime?
+  isSystem    Boolean  @default(false)
+  createdBy   String   @default("system")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([enabled, priority])
+  @@index([category])
+}
+
+model Guardrail {
+  id          String             @id @default(cuid())
+  key         String             @unique
+  name        String
+  description String
+  direction   GuardrailDirection
+  /// The control family: PROMPT_INJECTION, PII, SECRETS, SYSTEM_PROMPT_LEAK…
+  controlType String
+
+  enabled Boolean @default(true)
+  /// Confidence at or above which the guardrail acts, 0-100.
+  threshold Int   @default(60)
+  action    Decision @default(BLOCK)
+
+  /// Control-specific tuning (which detectors, which entity types, ignore
+  /// lists). Shape is documented per control type.
+  config Json?
+
+  hitCount  Int       @default(0)
+  lastHitAt DateTime?
+  isSystem  Boolean   @default(false)
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+
+  @@index([direction, enabled])
+}
+
+// =============================================================================
+// Incidents, alerts, audit  (§17, §18, §24)
+// =============================================================================
+
+model Incident {
+  id  String @id @default(cuid())
+  /// Analyst-facing key, e.g. INC-2026-0042.
+  ref String @unique
+
+  title    String
+  summary  String
+  severity Severity
+  status   IncidentStatus @default(OPEN)
+
+  /// Primary threat that triggered the case.
+  threatType String
+
+  applicationId String?
+  application   AiApplication? @relation(fields: [applicationId], references: [id])
+
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id])
+
+  /// The principal whose activity produced the incident.
+  subjectUser String?
+
+  assignedToId String?
+  assignedTo   User?   @relation("IncidentAssignee", fields: [assignedToId], references: [id])
+
+  /// Reconstructed attack chain: ordered stages with evidence and decisions.
+  attackChain Json?
+  /// AI-generated narrative (§21). Null when no model key is configured, in
+  /// which case the UI renders the deterministic summary instead.
+  aiSummary       String?
+  aiRecommendations Json?
+
+  resolution String?
+
+  openedAt    DateTime  @default(now())
+  containedAt DateTime?
+  resolvedAt  DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  events   SecurityEvent[]
+  timeline IncidentTimelineEntry[]
+  alerts   Alert[]
+
+  @@index([status])
+  @@index([severity])
+  @@index([openedAt])
+}
+
+model IncidentTimelineEntry {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  /// DETECTION, STATUS_CHANGE, NOTE, ACTION, EVIDENCE, AI_ANALYSIS
+  kind      String
+  actor     String
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([incidentId, createdAt])
+}
+
+model Alert {
+  id       String   @id @default(cuid())
+  severity Severity
+  title    String
+  message  String
+  /// THREAT, INCIDENT, APPROVAL, POLICY, SYSTEM
+  category String
+
+  eventId String?
+  event   SecurityEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  incidentId String?
+  incident   Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  acknowledged     Boolean   @default(false)
+  acknowledgedById String?
+  acknowledgedBy   User?     @relation("AlertAcknowledger", fields: [acknowledgedById], references: [id])
+  acknowledgedAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([acknowledged, createdAt])
+  @@index([severity])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  actorId   String?
+  actor     User?   @relation(fields: [actorId], references: [id])
+  actorName String
+  actorRole String
+
+  /// Dotted verb, e.g. policy.update, incident.status_change, tool.execute.
+  action   String
+  /// AUTH, CONFIG, SECURITY_DECISION, INCIDENT, TOOL, DOCUMENT, ADMIN
+  category String
+
+  targetType  String?
+  targetId    String?
+  targetLabel String?
+
+  description String
+  metadata    Json?
+  ipAddress   String?
+  /// SUCCESS or FAILURE — failed attempts matter more than successes here.
+  outcome     String @default("SUCCESS")
+
+  @@index([createdAt])
+  @@index([category])
+  @@index([actorId])
+  @@index([action])
+}
+
+// =============================================================================
+// Behavioural baselines  (§16 "historical activity", §9 anomaly detection)
+// =============================================================================
+
+/// Rolling statistics per subject and metric. The behavioural detection layer
+/// scores deviation in standard deviations rather than against a fixed
+/// threshold, so each agent is judged against its own normal.
+model Baseline {
+  id          String @id @default(cuid())
+  subjectType String
+  subjectId   String
+
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  /// toolCallsPerRequest, promptLength, retrievalCount, riskScore…
+  metric String
+
+  mean        Float
+  m2          Float @default(0)
+  sampleCount Int   @default(0)
+  min         Float @default(0)
+  max         Float @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([subjectType, subjectId, metric])
+  @@index([subjectId])
+}
+
+/// Point-in-time posture snapshot so trend charts survive event pruning (§23).
+model MetricSnapshot {
+  id       String   @id @default(cuid())
+  capturedAt DateTime @default(now())
+  /// HOUR or DAY
+  bucket   String
+
+  applicationId String?
+
+  requests        Int @default(0)
+  blocked         Int @default(0)
+  redacted        Int @default(0)
+  threats         Int @default(0)
+  criticalThreats Int @default(0)
+  promptInjections Int @default(0)
+  ragThreats      Int @default(0)
+  dataViolations  Int @default(0)
+  toolDenials     Int @default(0)
+  avgRiskScore    Float @default(0)
+  securityScore   Int @default(100)
+
+  @@index([capturedAt, bucket])
+}

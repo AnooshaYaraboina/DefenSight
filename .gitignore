@@ -45,3 +45,4 @@ next-env.d.ts
 /prisma/*.db-journal
 /prisma/migrations/dev.db*
 /.defensight
+/src/generated
