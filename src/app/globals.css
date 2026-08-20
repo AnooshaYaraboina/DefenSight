@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   DefenSight Design System
+   Dark-first enterprise security console. Every colour is a token; nothing
+   in the app hardcodes a hex value.
+   ========================================================================== */
+
+@theme {
+  /* ---- Surfaces ---- */
+  --color-base: #070a11;
+  --color-surface: #0c111b;
+  --color-surface-2: #111826;
+  --color-elevated: #161f30;
+  --color-inset: #04060c;
+
+  /* ---- Lines ---- */
+  --color-line: #1b2536;
+  --color-line-strong: #29374e;
+
+  /* ---- Text ---- */
+  --color-ink: #e8eefb;
+  --color-ink-2: #9aabc4;
+  --color-ink-3: #61728d;
+  --color-ink-4: #3f4d63;
+
+  /* ---- Brand (defensive cyan) ---- */
+  --color-brand: #22d3ee;
+  --color-brand-2: #0891b2;
+  --color-brand-dim: #0e4f5f;
+  --color-brand-ink: #032027;
+
+  /* ---- Severity scale ---- */
+  --color-critical: #ff3b52;
+  --color-critical-dim: #3d0d15;
+  --color-high: #ff8a3d;
+  --color-high-dim: #3a1c0a;
+  --color-medium: #ffc53d;
+  --color-medium-dim: #38290a;
+  --color-low: #3b9dff;
+  --color-low-dim: #0c2340;
+  --color-info: #7d8fa8;
+  --color-info-dim: #1a2231;
+
+  /* ---- Decision states ---- */
+  --color-allow: #22c55e;
+  --color-allow-dim: #0a2e18;
+  --color-warn: #ffc53d;
+  --color-warn-dim: #38290a;
+  --color-redact: #a855f7;
+  --color-redact-dim: #2a0f45;
+  --color-block: #ff3b52;
+  --color-block-dim: #3d0d15;
+  --color-approval: #38bdf8;
+  --color-approval-dim: #0a2c42;
+
+  /* ---- Fonts ---- */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ---- Motion ---- */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ---- Radii ---- */
+  --radius-panel: 0.625rem;
+}
+
+@keyframes ds-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 currentColor; opacity: 0.9; }
+  70%  { box-shadow: 0 0 0 6px transparent; opacity: 0.35; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 0.9; }
+}
+@keyframes ds-slide-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ds-shimmer {
+  100% { transform: translateX(100%); }
+}
+@keyframes ds-scan {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(400%); }
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+  html {
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-color: var(--color-base);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Scrollbars tuned for dense data views */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-strong);
+    border-radius: 999px;
+    border: 3px solid var(--color-base);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-ink-4); }
+
+  ::selection { background: var(--color-brand-dim); color: var(--color-ink); }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Numeric columns in dense tables must align */
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  .ds-live-dot {
+    animation: ds-pulse-ring 2s var(--ease-out-soft) infinite;
+    border-radius: 999px;
+  }
+  .ds-row-enter { animation: ds-slide-in 0.35s var(--ease-out-soft); }
+
+  .ds-grid-bg {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--color-line) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--color-line) 55%, transparent) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  .ds-skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--color-surface-2);
+  }
+  .ds-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-ink-4) 22%, transparent), transparent);
+    animation: ds-shimmer 1.6s infinite;
+  }
+}
