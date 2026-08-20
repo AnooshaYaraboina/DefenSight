@@ -20,6 +20,10 @@ import { ToolCallList } from "@/components/security/tool-call-list";
 import { CodePanel, KeyValue } from "@/components/security/evidence";
 import { formatDateTime, formatDuration } from "@/lib/utils/format";
 import { CHANNEL_META, ROLE_META } from "@/lib/engine/taxonomy";
+import {
+  buildExplanationInput, classifyThreat, correlateEvents, explainDecision,
+} from "@/lib/ai/automation";
+import { AiSummaryCard, CorrelatedEventsCard } from "@/components/security/ai-analysis";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +44,31 @@ export default async function EventDetailPage({
 
   const withheld = event.retrievals.filter((r) => !r.allowed);
   const deniedTools = event.toolCalls.filter((t) => t.decision === "BLOCK");
+
+  /*
+   * AI automation (§21). Runs strictly after the verdict, from the recorded
+   * result — it explains the decision, it never participates in making one.
+   * Falls back to deterministic text when no model is configured.
+   */
+  const explanationInput = await buildExplanationInput(id);
+  const [explanation, classification, correlated] = await Promise.all([
+    explanationInput
+      ? explainDecision({
+          ...explanationInput,
+          matchedPolicies: event.policiesMatched,
+        })
+      : Promise.resolve(null),
+    event.threatTypes.length > 0
+      ? classifyThreat({
+          threatTypes: event.threatTypes,
+          severity: event.severity,
+          riskScore: event.riskScore,
+          detectionSummaries: event.detections.slice(0, 6).map((d) => d.explanation.slice(0, 200)),
+          requestExcerpt: event.requestText.slice(0, 400),
+        })
+      : Promise.resolve(null),
+    correlateEvents(id, 6),
+  ]);
 
   return (
     <>
@@ -113,6 +142,18 @@ export default async function EventDetailPage({
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-4">
+          {explanation && (
+            <AiSummaryCard
+              summary={
+                classification
+                  ? `${classification.text}\n\n${explanation.text}`
+                  : explanation.text
+              }
+              fromModel={explanation.fromModel}
+              title="Why this decision"
+            />
+          )}
+
           <Card>
             <CardHeader>
               <div>
@@ -379,6 +420,8 @@ export default async function EventDetailPage({
               </CardContent>
             </Card>
           )}
+
+          <CorrelatedEventsCard events={correlated} />
 
           {event.alerts.length > 0 && (
             <Card>

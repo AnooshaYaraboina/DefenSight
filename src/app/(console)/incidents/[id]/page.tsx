@@ -18,6 +18,12 @@ import { IncidentActions } from "@/components/security/incident-actions";
 import { RiskPill } from "@/components/security/risk-score";
 import { KeyValue } from "@/components/security/evidence";
 import { formatDateTime, formatRelative } from "@/lib/utils/format";
+import {
+  buildIncidentBrief, correlateEvents, recommendMitigations, summariseIncident,
+} from "@/lib/ai/automation";
+import {
+  AiRecommendationsCard, AiSummaryCard, CorrelatedEventsCard,
+} from "@/components/security/ai-analysis";
 import { THREAT_META } from "@/lib/engine/taxonomy";
 
 export const dynamic = "force-dynamic";
@@ -43,16 +49,25 @@ export default async function IncidentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [incident, analysts] = await Promise.all([
+  const [incident, analysts, brief] = await Promise.all([
     getIncidentDetail(id),
     prisma.user.findMany({
       where: { role: { in: ["SECURITY_ADMIN", "SECURITY_ANALYST"] } },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
+    buildIncidentBrief(id),
   ]);
 
   if (!incident) notFound();
+
+  // AI automation (§21) runs after the case exists and cannot alter it. All
+  // three degrade to deterministic output when no model is configured.
+  const [analysis, mitigations, correlated] = await Promise.all([
+    brief ? summariseIncident(brief) : Promise.resolve(null),
+    brief ? recommendMitigations(brief) : Promise.resolve(null),
+    incident.events[0] ? correlateEvents(incident.events[0].id, 6) : Promise.resolve([]),
+  ]);
 
   const allDetections = incident.events.flatMap((e) => e.detections);
   const allToolCalls = incident.events.flatMap((e) => e.toolCalls);
@@ -109,6 +124,14 @@ export default async function IncidentDetailPage({
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-4">
+          {analysis && (
+            <AiSummaryCard
+              summary={analysis.text}
+              fromModel={analysis.fromModel}
+              title="Incident analysis"
+            />
+          )}
+
           <Card>
             <CardHeader>
               <div>
@@ -335,6 +358,12 @@ export default async function IncidentDetailPage({
               </ol>
             </CardContent>
           </Card>
+
+          {mitigations && (
+            <AiRecommendationsCard items={mitigations.items} fromModel={mitigations.fromModel} />
+          )}
+
+          <CorrelatedEventsCard events={correlated} />
 
           {incident.agent && (
             <Card>

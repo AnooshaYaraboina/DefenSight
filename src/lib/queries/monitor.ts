@@ -129,11 +129,23 @@ export async function getEventDetail(id: string) {
     topDrivers: string[]; factors: RiskFactor[];
   }>(event.riskFactors, { score: event.riskScore, confidence: 0, rationale: "", topDrivers: [], factors: [] });
 
+  // The stage trace records which policies matched; surfacing them here saves
+  // the explanation layer from re-deriving what the pipeline already decided.
+  const policyStage = jsonArray<StageTrace>(event.stageTrace).find(
+    (s) => s.stage === "POLICY_EVALUATION",
+  );
+  const matched = (policyStage?.details?.matched ?? []) as Array<{
+    key: string; name: string; action: string; conditions: string[];
+  }>;
+
   return {
     ...event,
     threatTypes: jsonArray<ThreatType>(event.threatTypes),
     stageTrace: jsonArray<StageTrace>(event.stageTrace),
     riskAssessment: riskFactors,
+    policiesMatched: matched.map((m) => ({
+      name: m.name, action: m.action, conditions: m.conditions ?? [],
+    })),
   };
 }
 
