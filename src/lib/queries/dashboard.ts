@@ -64,6 +64,11 @@ export interface DashboardData {
   canvas: Array<{
     label: string; total: number; critical: number;
     high: number; medium: number; low: number; requests: number;
+    /** Incidents opened inside this bucket — the response to the spike. */
+    incidents: Array<{
+      id: string; reference: string; title: string;
+      severity: Severity; status: string;
+    }>;
   }>;
 }
 
@@ -194,6 +199,12 @@ export async function getDashboardData(rangeKey?: string): Promise<DashboardData
       Promise.resolve(countThreat(priorEvents, (t) => t === "UNAUTHORIZED_TOOL_CALL" || t === "TOOL_ABUSE")),
     ]);
 
+  const incidentsInWindow = await prisma.incident.findMany({
+    where: { openedAt: { gte: since } },
+    select: { id: true, ref: true, title: true, severity: true, status: true, openedAt: true },
+    orderBy: { openedAt: "asc" },
+  });
+
   const injections = countThreat(events, (t) => t.includes("INJECTION"));
   const priorInjections = countThreat(priorEvents, (t) => t.includes("INJECTION"));
   const ragThreats = countThreat(events, (t) => THREAT_META[t]?.family === "RAG");
@@ -232,6 +243,9 @@ export async function getDashboardData(rangeKey?: string): Promise<DashboardData
   const canvas = buckets.map((b, i) => {
     const inBucket = events.filter((e) => e.createdAt >= b.start && e.createdAt < b.end);
     const t = threatTrend[i];
+    const opened = incidentsInWindow.filter(
+      (inc) => inc.openedAt >= b.start && inc.openedAt < b.end,
+    );
     return {
       label: b.label,
       total: t.total,
@@ -240,6 +254,13 @@ export async function getDashboardData(rangeKey?: string): Promise<DashboardData
       medium: t.medium,
       low: t.low,
       requests: inBucket.length,
+      incidents: opened.map((inc) => ({
+        id: inc.id,
+        reference: inc.ref,
+        title: inc.title,
+        severity: inc.severity as Severity,
+        status: inc.status as string,
+      })),
     };
   });
 

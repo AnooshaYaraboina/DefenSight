@@ -107,9 +107,16 @@ function DefenseView({ data }: { data: WorkspaceData["defense"] }) {
     BLOCK: "var(--color-viz-block)",
   };
   const ORDER = ["ALLOW", "WARN", "REDACT", "REQUIRE_APPROVAL", "BLOCK"] as const;
+  const threatMax = Math.max(1, ...data.topThreats.map((t) => t.count));
+  const SEVERITY_TONE: Record<string, string> = {
+    CRITICAL: "var(--color-viz-ord-5)",
+    HIGH: "var(--color-viz-ord-4)",
+    MEDIUM: "var(--color-viz-ord-2)",
+    LOW: "var(--color-viz-ord-1)",
+  };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-3">
+    <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
       <Region title="Control coverage" href="/guardrails" action="Configure">
         <div className="grid grid-cols-2 gap-3">
           <Figure
@@ -127,6 +134,34 @@ function DefenseView({ data }: { data: WorkspaceData["defense"] }) {
           {data.policies.blocking} policies stop a request outright. The most restrictive matched
           action always wins, so evaluation order cannot weaken a verdict.
         </p>
+      </Region>
+
+      <Region title="What was attempted" href="/threats" action="All threats">
+        {data.topThreats.length === 0 ? (
+          <p className="text-[11px] text-ink-4">
+            No threats detected in this window. Every request cleared all four layers.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {data.topThreats.map((t) => (
+              <li key={t.type}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="truncate text-[11px] text-ink-2">{t.label}</span>
+                  <span className="font-mono text-[11px] tabular text-ink-3">{t.count}</span>
+                </div>
+                <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-inset">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-500"
+                    style={{
+                      width: `${(t.count / threatMax) * 100}%`,
+                      background: SEVERITY_TONE[t.severity] ?? "var(--color-viz-primary)",
+                    }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </Region>
 
       <Region title="Detection layers" href="/detections" action="Inspect">

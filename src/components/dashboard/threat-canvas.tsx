@@ -3,6 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { useChartSize } from "@/components/charts/primitives";
+import { plural } from "@/lib/engine/text";
 
 /**
  * The primary canvas.
@@ -25,6 +26,13 @@ export interface CanvasPoint {
   medium: number;
   low: number;
   requests: number;
+  incidents?: Array<{
+    id: string;
+    reference: string;
+    title: string;
+    severity: string;
+    status: string;
+  }>;
 }
 
 const BAND_LEGEND = [
@@ -119,6 +127,11 @@ export function ThreatCanvas({
           <p className="mt-1 font-mono text-[11px] tabular text-ink-3">
             {readout.requests.toLocaleString()} req
           </p>
+          {point && point.incidents && point.incidents.length > 0 && (
+            <p className="mt-0.5 truncate text-[10px] text-warn">
+              {plural(point.incidents.length, "incident")} opened
+            </p>
+          )}
         </div>
       </div>
 
@@ -230,6 +243,40 @@ export function ThreatCanvas({
               </g>
             )}
 
+            {/*
+              Incidents opened, marked on the baseline. Same axis as the
+              threats that caused them — a separate timeline would make the
+              reader align the spike and the response by eye.
+            */}
+            {data.map((d, i) => {
+              const opened = d.incidents?.length ?? 0;
+              if (opened === 0) return null;
+              return (
+                <g key={`inc-${i}`} opacity={hover === null || hover === i ? 1 : 0.35}>
+                  <line
+                    x1={x(i)} x2={x(i)} y1={PAD_T + plotH} y2={PAD_T + plotH - 9}
+                    stroke="var(--color-viz-warn)"
+                    strokeWidth={1}
+                    strokeDasharray="2 2"
+                  />
+                  <path
+                    d={`M${x(i)},${PAD_T + plotH - 13.5}l4,4l-4,4l-4,-4Z`}
+                    fill="var(--color-viz-warn)"
+                    stroke="var(--color-surface)"
+                    strokeWidth={1}
+                  />
+                  {opened > 1 && (
+                    <text
+                      x={x(i) + 7} y={PAD_T + plotH - 10}
+                      className="fill-ink-4" style={{ fontSize: 8 }}
+                    >
+                      ×{opened}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+
             {/* Sparse axis labels — first, middle, last. */}
             {[0, Math.floor((data.length - 1) / 2), data.length - 1]
               .filter((i, idx, arr) => arr.indexOf(i) === idx)
@@ -246,7 +293,7 @@ export function ThreatCanvas({
         )}
       </div>
 
-      <div className="mt-2 flex shrink-0 items-center gap-3 pl-9">
+      <div className="mt-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 pl-9">
         <span className="ds-eyebrow">Composition</span>
         {BAND_LEGEND.map((s) => (
           <span key={s.label} className="flex items-center gap-1 text-[9px] text-ink-4">
@@ -254,6 +301,12 @@ export function ThreatCanvas({
             {s.label}
           </span>
         ))}
+        <span className="ml-auto flex items-center gap-1 text-[9px] text-ink-4">
+          <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden>
+            <path d="M4.5,0.5l4,4l-4,4l-4,-4Z" fill="var(--color-viz-warn)" />
+          </svg>
+          Incident opened
+        </span>
       </div>
     </div>
   );

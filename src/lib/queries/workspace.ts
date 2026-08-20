@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { type Severity } from "@/lib/engine/taxonomy";
+import { jsonArray } from "@/lib/db/json";
+import { THREAT_META, type Severity, type ThreatType } from "@/lib/engine/taxonomy";
 import { trailingWindow } from "./window";
 
 /**
@@ -18,6 +19,8 @@ export interface WorkspaceData {
     layers: Array<{ layer: string; detections: number; avgConfidence: number }>;
     decisions: Array<{ decision: string; count: number }>;
     topPolicies: Array<{ name: string; action: string; hits: number }>;
+    /** What was actually detected, named. Prompt injection leads by design. */
+    topThreats: Array<{ type: string; label: string; count: number; severity: Severity }>;
   };
   estate: {
     applications: Array<{ name: string; slug: string; score: number; requests: number; blocked: number }>;
@@ -98,6 +101,27 @@ export async function getWorkspaceData(): Promise<WorkspaceData> {
   ]);
 
   /* ------------------------------------------------------------- defense */
+  /*
+   * Threat types named rather than merely counted. "36 detections" tells an
+   * analyst nothing actionable; "14 prompt injection, 6 data exfiltration"
+   * tells them what is being attempted against this estate.
+   */
+  const threatCounts = new Map<ThreatType, number>();
+  for (const e of events) {
+    for (const t of jsonArray<ThreatType>(e.threatTypes)) {
+      threatCounts.set(t, (threatCounts.get(t) ?? 0) + 1);
+    }
+  }
+  const topThreats = [...threatCounts.entries()]
+    .map(([type, count]) => ({
+      type,
+      label: THREAT_META[type]?.label ?? type,
+      count,
+      severity: (THREAT_META[type]?.baseSeverity ?? "LOW") as Severity,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
   const decisionCounts = new Map<string, number>();
   for (const e of events) decisionCounts.set(e.decision, (decisionCounts.get(e.decision) ?? 0) + 1);
 
@@ -217,6 +241,7 @@ export async function getWorkspaceData(): Promise<WorkspaceData> {
       })).sort((a, b) => b.detections - a.detections),
       decisions: [...decisionCounts.entries()].map(([decision, count]) => ({ decision, count })),
       topPolicies: topPolicies.map((p) => ({ name: p.name, action: p.action, hits: p.hitCount })),
+      topThreats,
     },
     estate: {
       applications: appStats,
