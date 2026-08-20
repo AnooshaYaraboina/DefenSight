@@ -58,6 +58,13 @@ export interface DashboardData {
   postureTrend: number[];
   /** Per-tile series for the stat sparklines, keyed by tile key. */
   sparklines: Record<string, number[]>;
+  /** Derived reading of current conditions. */
+  threatLevel: "LOW" | "GUARDED" | "ELEVATED" | "SEVERE";
+  /** Per-bucket severity composition for the primary canvas. */
+  canvas: Array<{
+    label: string; total: number; critical: number;
+    high: number; medium: number; low: number; requests: number;
+  }>;
 }
 
 function bucketsFor(hours: number) {
@@ -222,6 +229,20 @@ export async function getDashboardData(rangeKey?: string): Promise<DashboardData
     };
   });
 
+  const canvas = buckets.map((b, i) => {
+    const inBucket = events.filter((e) => e.createdAt >= b.start && e.createdAt < b.end);
+    const t = threatTrend[i];
+    return {
+      label: b.label,
+      total: t.total,
+      critical: t.critical,
+      high: t.high,
+      medium: t.medium,
+      low: t.low,
+      requests: inBucket.length,
+    };
+  });
+
   const bands: Array<{ band: string; min: number; max: number; severity: Severity }> = [
     { band: "0-14", min: 0, max: 15, severity: "INFO" },
     { band: "15-39", min: 15, max: 40, severity: "LOW" },
@@ -356,12 +377,31 @@ export async function getDashboardData(rangeKey?: string): Promise<DashboardData
     ),
   };
 
+  /*
+   * Threat level is a reading of current conditions, derived rather than
+   * stored: open critical incidents first, then the rate of critical events,
+   * then blocked share. A level that only tracked volume would read "severe"
+   * on a busy quiet day and "low" during a single devastating breach.
+   */
+  const criticalRate = events.length ? criticalCount / events.length : 0;
+  const blockedRate = events.length ? blockedCount / events.length : 0;
+  const threatLevel: "LOW" | "GUARDED" | "ELEVATED" | "SEVERE" =
+    openIncidents >= 5 || criticalRate > 0.12
+      ? "SEVERE"
+      : openIncidents >= 2 || criticalRate > 0.05 || blockedRate > 0.2
+        ? "ELEVATED"
+        : activeThreatCount > 0
+          ? "GUARDED"
+          : "LOW";
+
   return {
     range,
     securityScore,
     securityScoreDelta: priorScore === null ? null : securityScore - priorScore,
+    threatLevel,
     postureTrend,
     sparklines,
+    canvas,
     tiles,
     threatTrend,
     riskDistribution,

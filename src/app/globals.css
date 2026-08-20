@@ -109,6 +109,16 @@
   --radius-panel: 0.625rem;
 }
 
+@keyframes ds-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes ds-rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes ds-pulse-ring {
   0%   { box-shadow: 0 0 0 0 currentColor; opacity: 0.9; }
   70%  { box-shadow: 0 0 0 6px transparent; opacity: 0.35; }
@@ -263,7 +273,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ds-aurora, .ds-beam, .ds-float, .ds-gradient-border,
-  .ds-radar-sweep, .ds-ping, .ds-marquee, .ds-live-dot {
+  .ds-radar-sweep, .ds-ping, .ds-marquee, .ds-live-dot,
+  .ds-rise, .ds-sweep::after, .ds-row-enter {
     animation: none !important;
   }
 }
@@ -307,6 +318,89 @@
 }
 
 @layer utilities {
+  /* ==========================================================================
+     Surface language
+     Panels are defined by a hairline and a barely-there top highlight rather
+     than by a fill. Filled cards on a dark ground read as flat plastic; a lit
+     edge reads as a physical surface, which is what makes dense instrumentation
+     feel built rather than assembled.
+     ========================================================================== */
+
+  .ds-panel {
+    position: relative;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--color-surface) 100%, white 1.5%),
+      var(--color-surface)
+    );
+    border: 1px solid var(--color-line);
+    border-radius: 0.5rem;
+  }
+  /* The lit top edge. 1px, low opacity — visible as depth, not as a line. */
+  .ds-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: 0.5rem 0.5rem 0 0;
+    background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in oklab, white 7%, transparent) 22%,
+      color-mix(in oklab, white 7%, transparent) 78%,
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  .ds-panel-interactive {
+    transition:
+      border-color 160ms var(--ease-out-soft),
+      background-color 160ms var(--ease-out-soft),
+      transform 160ms var(--ease-out-soft);
+  }
+  .ds-panel-interactive:hover {
+    border-color: var(--color-line-strong);
+    background: var(--color-surface-2);
+  }
+
+  /* Inset well for data regions inside a panel. */
+  .ds-well {
+    background: var(--color-inset);
+    border: 1px solid color-mix(in oklab, var(--color-line) 70%, transparent);
+    border-radius: 0.375rem;
+  }
+
+  /* Section eyebrow — the small caps label that opens every region. */
+  .ds-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--color-ink-4);
+  }
+
+  /* Headline numerals: tight, tabular, optically aligned. */
+  .ds-figure {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  /* Divider that fades at both ends, for use inside panels. */
+  .ds-rule {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--color-line) 12%,
+      var(--color-line) 88%,
+      transparent
+    );
+  }
+
   /* Numeric columns in dense tables must align */
   .tabular { font-variant-numeric: tabular-nums; }
 
@@ -315,6 +409,24 @@
     border-radius: 999px;
   }
   .ds-row-enter { animation: ds-slide-in 0.35s var(--ease-out-soft); }
+
+  /* Staggered entrance for a group of panels. Subtle — 4px and 240ms. */
+  .ds-rise { animation: ds-rise 240ms var(--ease-out-soft) both; }
+
+  /* A single light pass across a live element, on a long cycle. */
+  .ds-sweep::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      100deg,
+      transparent 40%,
+      color-mix(in oklab, var(--color-brand) 8%, transparent) 50%,
+      transparent 60%
+    );
+    animation: ds-sweep 4.5s var(--ease-out-soft) infinite;
+  }
 
   .ds-grid-bg {
     background-image:

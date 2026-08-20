@@ -5,6 +5,8 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { getCurrentUser } from "@/lib/rbac/session";
 import { getNavBadges } from "@/lib/queries/events";
+import { isConfigured } from "@/lib/ai/provider";
+import { AssistantDock } from "@/components/dashboard/assistant-dock";
 
 /**
  * Console shell. Everything inside the (console) route group renders with the
@@ -26,6 +28,13 @@ export default async function ConsoleLayout({
           <Topbar user={user} unreadAlerts={badges.unreadAlerts} />
           <main className="flex-1 px-3 py-5 sm:px-5 lg:px-6">{children}</main>
         </div>
+
+        {/*
+          The assistant is docked rather than routed: a question usually occurs
+          while looking at evidence, and making the analyst leave that view to
+          ask it is how an assistant goes unused.
+        */}
+        <AssistantDock configured={isConfigured()} />
       </div>
       <Toaster
         position="bottom-right"
