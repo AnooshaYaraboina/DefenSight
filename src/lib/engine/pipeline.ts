@@ -433,10 +433,95 @@ export function analyze(context: AnalysisContext): AnalysisResult {
     });
   }
 
-  /* ================================================ 8. RISK SCORING ====== */
+  /* ======================================== 8. OUTPUT CONTENT ANALYSIS === */
 
-  // Re-fuse: the behaviour, authorisation and gateway stages contributed new
-  // detections after the first fusion pass.
+  /*
+   * The response is analysed *before* scoring, not after.
+   *
+   * Running the output stage last meant a response carrying credentials was
+   * blocked by the output guardrail but scored zero risk and recorded no threat
+   * type — the event looked benign in every view except the one that stopped
+   * it. Anything the platform knows must reach the score before the score is
+   * computed.
+   */
+  if (context.output) {
+    stage("OUTPUT_GUARDRAIL", "Response Analysed", () => {
+      const outputNorm = normalize(context.output!);
+      const { detections: outputDetections } = runDetectors({
+        raw: context.output!,
+        normalization: outputNorm,
+        channel: "MODEL_OUTPUT",
+        context: { systemPrompt: context.application.systemPrompt },
+      });
+      detections.push(...outputDetections);
+
+      const outputSensitive = scanSensitive(context.output!, "MODEL_OUTPUT");
+      sensitiveFindings.push(...outputSensitive);
+
+      // Sensitive data in a response is a threat in its own right. Without
+      // this, findings existed but no threat type was ever attributed.
+      const credentials = outputSensitive.filter((f) => f.category === "CREDENTIAL");
+      const personal = outputSensitive.filter((f) =>
+        ["PII", "CUSTOMER", "EMPLOYEE", "FINANCIAL"].includes(f.category),
+      );
+
+      if (credentials.length > 0) {
+        detections.push({
+          detectorId: "sensitive.output-credentials",
+          layer: "AUTHORIZATION",
+          threatType: "SECRET_EXPOSURE",
+          channel: "MODEL_OUTPUT",
+          confidence: Math.max(...credentials.map((f) => f.confidence)),
+          score: 95,
+          severity: "CRITICAL",
+          explanation: `The response carries credential material: ${credentials.map((f) => `${f.count}× ${f.type.toLowerCase().replace(/_/g, " ")}`).join(", ")}. Credentials in a model response are treated as disclosed the moment they are generated, regardless of who was going to receive them.`,
+          evidence: {
+            spans: credentials.flatMap((f) => f.spans).slice(0, 8),
+            types: credentials.map((f) => f.type),
+          },
+        });
+      }
+
+      if (personal.length > 0) {
+        const total = personal.reduce((sum, f) => sum + f.count, 0);
+        detections.push({
+          detectorId: "sensitive.output-personal-data",
+          layer: "AUTHORIZATION",
+          threatType: "DATA_LEAKAGE",
+          channel: "MODEL_OUTPUT",
+          confidence: Math.max(...personal.map((f) => f.confidence)),
+          score: 70,
+          severity: total > 5 ? "HIGH" : "MEDIUM",
+          explanation: `The response contains ${total} sensitive value(s) across ${[...new Set(personal.map((f) => f.category.toLowerCase()))].join(", ")}: ${personal.slice(0, 4).map((f) => `${f.count}× ${f.type.toLowerCase().replace(/_/g, " ")}`).join(", ")}.`,
+          evidence: {
+            spans: personal.flatMap((f) => f.spans).slice(0, 8),
+            types: personal.map((f) => f.type),
+          },
+        });
+      }
+
+      const summaryParts: string[] = [];
+      if (outputDetections.length) summaryParts.push(`${outputDetections.length} threat indicator(s) in the response`);
+      if (credentials.length) summaryParts.push(`credential material present`);
+      if (personal.length) summaryParts.push(`${personal.reduce((s2, f) => s2 + f.count, 0)} personal data value(s) present`);
+
+      return {
+        summary: summaryParts.length
+          ? `Response analysis found ${summaryParts.join("; ")}.`
+          : "Response analysis found no threat indicators or sensitive data.",
+        details: {
+          detections: outputDetections.length,
+          sensitiveTypes: outputSensitive.map((f) => `${f.count}× ${f.type}`),
+        },
+        result: null,
+      };
+    });
+  }
+
+  /* ================================================ 9. RISK SCORING ====== */
+
+  // Re-fuse: the behaviour, authorisation, gateway and output stages all
+  // contributed detections after the first fusion pass.
   const finalFusion = fuseDetections(detections);
 
   const risk = stage("RISK_SCORING", "Risk Scored", () => {
@@ -535,24 +620,14 @@ export function analyze(context: AnalysisContext): AnalysisResult {
   let outputRedacted = false;
   let outputDecision: Decision = "ALLOW";
 
-  if (context.output && !blocked) {
-    stage("OUTPUT_GUARDRAIL", "Response Screened", () => {
-      const outputNorm = normalize(context.output!);
-      const { detections: outputDetections } = runDetectors({
-        raw: context.output!,
-        normalization: outputNorm,
-        channel: "MODEL_OUTPUT",
-        context: { systemPrompt: context.application.systemPrompt },
-      });
-      detections.push(...outputDetections);
-
-      const outputSensitive = scanSensitive(context.output!, "MODEL_OUTPUT");
-      sensitiveFindings.push(...outputSensitive);
+  if (context.output) {
+    stage("RESPONSE", "Response Screened", () => {
+      const outputSensitive = sensitiveFindings.filter((f) => f.channel === "MODEL_OUTPUT");
 
       const outputGuardrails = evaluateGuardrails({
         guardrails: context.guardrails,
         direction: "OUTPUT",
-        detections: [...outputDetections, ...detections.filter((d) => d.channel === "MODEL_OUTPUT")],
+        detections: detections.filter((d) => d.channel === "MODEL_OUTPUT"),
         sensitiveFindings: outputSensitive,
         channels: ["MODEL_OUTPUT"],
         text: context.output,

@@ -88,8 +88,10 @@ describe("defensive pipeline — end to end", () => {
       agent: agent(),
     }));
     expect(r.decision).toBe("BLOCK");
-    const leak = r.stageTrace.find((s) => s.stage === "OUTPUT_GUARDRAIL");
-    expect(leak?.summary).toMatch(/System Prompt Leak Prevention/i);
+    // The guardrail verdict is recorded on the response-screening stage; the
+    // earlier output stage analyses content, it does not decide.
+    const screening = r.stageTrace.filter((s) => s.stage === "RESPONSE");
+    expect(screening.some((s) => /System Prompt Leak Prevention/i.test(s.summary))).toBe(true);
   });
 
   it("produces an explainable risk score whose factors sum to the score", () => {
@@ -215,5 +217,41 @@ describe("assessment §27 — final demonstration scenario", () => {
     expect(matched).toContain("block-indirect-injection");
     expect(matched).toContain("block-data-exfiltration");
     expect(matched).toContain("block-unauthorized-tool");
+  });
+});
+
+describe("output-stage findings reach the score", () => {
+  it("attributes a threat type and risk to credentials in a response", () => {
+    const r = analyze(context({
+      input: "Summarise the integration status for the leadership update.",
+      output:
+        "Integration is green. Pipeline credentials for reference: FEEDBACK_API_KEY=sk-live-8Kd93jsLPqm2vNxTr7aQwZ4bHy6EfGh1",
+    }));
+    // Blocking is not enough: an event that scores zero and names no threat
+    // looks benign in every view except the one that stopped it.
+    expect(r.threatTypes).toContain("SECRET_EXPOSURE");
+    expect(r.riskScore).toBeGreaterThan(0);
+    expect(r.decision).toBe("BLOCK");
+    expect(r.risk.factors.some((f) => f.key === "dataSensitivity")).toBe(true);
+  });
+
+  it("attributes personal data in a response as leakage", () => {
+    const r = analyze(context({
+      input: "Summarise the customer feedback for the leadership update.",
+      output:
+        "J. Alvarez (j.alvarez@gmail.com, card 4111 1111 1111 1111) and R. Sundaram (SSN 456-78-9012) both responded.",
+    }));
+    expect(r.threatTypes).toContain("DATA_LEAKAGE");
+    expect(r.riskScore).toBeGreaterThan(0);
+    expect(r.redacted || r.blocked).toBe(true);
+  });
+
+  it("leaves a clean response unscored", () => {
+    const r = analyze(context({
+      input: "Summarise the integration status.",
+      output: "Integration is green. 94% of committed milestones were delivered on schedule.",
+    }));
+    expect(r.threatTypes).toHaveLength(0);
+    expect(r.decision).toBe("ALLOW");
   });
 });

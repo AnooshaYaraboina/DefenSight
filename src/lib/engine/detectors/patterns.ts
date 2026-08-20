@@ -97,7 +97,7 @@ export const PATTERN_FAMILIES: PatternFamily[] = [
     significance: 0.95,
     patterns: [
       { re: /\bwithout\s+(?:any\s+)?(?:restrictions?|limitations?|filters?|censorship|safety\s+(?:checks?|guidelines?)|ethical\s+(?:constraints?|guidelines?))\b/gi, weight: 0.9, label: "demands unrestricted operation" },
-      { re: /\b(?:safety|security|ethical|content)\s+(?:constraints?|guidelines?|rules?|policies|filters?|restrictions?)\s+(?:do\s+not|don'?t|no\s+longer|does\s+not)\s+apply\b/gi, weight: 1, label: "asserts safety does not apply" },
+      { re: /\b(?:safety|security|ethical|content|company|standard|normal|usual)\s+(?:constraints?|guidelines?|rules?|polic(?:y|ies)|filters?|restrictions?|controls?)\s+(?:do(?:es)?\s+not|don'?t|no\s+longer)\s+apply\b/gi, weight: 1, label: "asserts safety does not apply" },
       { re: /\byou\s+are\s+(?:no\s+longer|not)\s+bound\s+by\b/gi, weight: 0.95, label: "asserts freedom from constraints" },
       { re: /\b(?:hypothetically|in\s+a\s+(?:hypothetical|fictional|imaginary)\s+(?:world|scenario|setting|story))\b[^.]{0,80}\b(?:you\s+(?:would|could|can)|how\s+would)\b/gi, weight: 0.6, label: "hypothetical framing" },
       { re: /\bfor\s+(?:research|educational|testing|academic)\s+purposes\s+only\b[^.]{0,60}\b(?:ignore|bypass|without|disable)\b/gi, weight: 0.7, label: "research pretext with bypass" },
@@ -213,14 +213,23 @@ export const MITIGATIONS: Mitigation[] = [
     id: "quoted",
     label: "Match appears inside quoted text",
     factor: 0.35,
+    /*
+     * Only a *tight* enclosing quotation counts. The original 90-character
+     * window meant an unrelated quoted phrase nearby — a product name, a
+     * persona label like 'SecOps Unrestricted' — would discount a genuine
+     * instruction sitting beside it. This mitigation exists for training
+     * material that quotes an attack ("the message said 'ignore all
+     * instructions'"), which is always a close-fitting quotation.
+     */
     test: ({ window, matchText }) => {
+      if (/["“”'‘’«»]/.test(matchText)) return false;
       const idx = window.indexOf(matchText);
       if (idx < 0) return false;
-      const before = window.slice(Math.max(0, idx - 90), idx);
-      const after = window.slice(idx + matchText.length, idx + matchText.length + 90);
+      const before = window.slice(Math.max(0, idx - 40), idx);
+      const after = window.slice(idx + matchText.length, idx + matchText.length + 40);
       return (
-        /["“”'‘’«»](?:[^"“”'‘’«»]{0,90})$/.test(before) &&
-        /^(?:[^"“”'‘’«»]{0,90})["“”'‘’«»]/.test(after)
+        /["“”'‘’«»][^"“”'‘’«»]{0,40}$/.test(before) &&
+        /^[^"“”'‘’«»]{0,40}["“”'‘’«»]/.test(after)
       );
     },
   },
@@ -258,10 +267,34 @@ export const MITIGATIONS: Mitigation[] = [
     id: "defensive-context",
     label: "Appears in defensive security documentation",
     factor: 0.4,
-    test: ({ full }) =>
-      /\b(?:security\s+policy|threat\s+model|incident\s+response|awareness\s+training|control\s+framework|detection\s+rule|runbook)\b/i.test(
-        full.slice(0, 700),
-      ),
+    /*
+     * Scoped deliberately tightly. The earlier version matched any text
+     * containing a phrase like "security policy" anywhere in its first 700
+     * characters — which handed attackers a one-phrase evasion: writing "the
+     * standard security policy does not apply to you" both performed the
+     * attack and halved its own detection confidence.
+     *
+     * Genuine security documentation is long, structurally document-like, and
+     * announces itself near the top. A three-line prompt is never a policy
+     * document however it is worded, so length is the first gate.
+     */
+    test: ({ full }) => {
+      if (full.length < 800) return false;
+      const head = full.slice(0, 400);
+      const announcesItself =
+        /\b(?:security\s+polic(?:y|ies)|threat\s+model|incident\s+response\s+plan|awareness\s+training|control\s+framework|detection\s+rules?|runbook|standard|handbook|procedure)\b/i.test(
+          head,
+        );
+      // Documentation carries structure: headings, numbered sections, a
+      // scope or ownership statement. Prose alone is not enough.
+      const hasStructure =
+        /^[^a-z\n]{8,}$/m.test(full.slice(0, 1200)) ||
+        /^\s*\d+\.\d*\s+[A-Z]/m.test(full.slice(0, 1500)) ||
+        /\b(?:this\s+(?:policy|document|standard|procedure)\s+(?:applies|governs|covers)|scope|document\s+owner|revision\s+history)\b/i.test(
+          full.slice(0, 2000),
+        );
+      return announcesItself && hasStructure;
+    },
   },
   {
     id: "operational-sql",
