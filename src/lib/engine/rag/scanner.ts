@@ -16,6 +16,7 @@ import {
   severityFromRisk,
   type Classification,
   type Severity,
+  THREAT_META,
 } from "../taxonomy";
 import type { DetectionResult } from "../types";
 import { normalize } from "../normalize";
@@ -169,7 +170,7 @@ export function scanDocument(input: DocumentScanInput): DocumentScanResult {
     status = "MALICIOUS";
     quarantine = true;
     quarantineReason = fusion.primary
-      ? `${fusion.primary.threatType.replace(/_/g, " ").toLowerCase()} detected at ${(fusion.maxConfidence * 100).toFixed(0)}% confidence across ${fusion.primary.agreement} independent layer(s). Document withheld from all retrieval.`
+      ? `${THREAT_META[fusion.primary.threatType].label} detected at ${(fusion.maxConfidence * 100).toFixed(0)}% confidence across ${fusion.primary.agreement} independent layer(s). Document withheld from all retrieval.`
       : `Composite risk score ${riskScore}/100 exceeds the quarantine threshold.`;
   } else if (fusion.maxConfidence >= 0.25 || riskScore >= 40 || normalization.obfuscated) {
     status = "SUSPICIOUS";

@@ -27,6 +27,7 @@ import {
   CLASSIFICATION_RANK,
   mostRestrictive,
   severityFromRisk,
+  THREAT_META,
   type Classification,
   type Decision,
   type PipelineStage,
@@ -279,7 +280,7 @@ export function analyze(context: AnalysisContext): AnalysisResult {
     const fused = fuseDetections(detections);
     return {
       summary: fused.primary
-        ? `${plural(fused.threats.length, "threat type")} confirmed. Primary: ${fused.primary.threatType.replace(/_/g, " ").toLowerCase()} at ${(fused.maxConfidence * 100).toFixed(0)}% confidence from ${plural(fused.primary.agreement, "independent layer")}.`
+        ? `${plural(fused.threats.length, "threat type")} confirmed. Primary: ${THREAT_META[fused.primary.threatType].label} at ${(fused.maxConfidence * 100).toFixed(0)}% confidence from ${plural(fused.primary.agreement, "independent layer")}.`
         : "No threats confirmed by the detection engine.",
       details: {
         threats: fused.threats.map((t) => ({
@@ -736,8 +737,10 @@ function buildSummary(p: {
   const parts: string[] = [];
 
   if (p.fusion.primary) {
+    // THREAT_META carries the display name, so acronyms survive: lowercasing
+    // and sentence-casing turned "RAG_POISONING" into "Rag poisoning".
     parts.push(
-      `${p.fusion.primary.threatType.replace(/_/g, " ").toLowerCase()} detected at ${(p.fusion.maxConfidence * 100).toFixed(0)}% confidence`,
+      `${THREAT_META[p.fusion.primary.threatType].label} detected at ${(p.fusion.maxConfidence * 100).toFixed(0)}% confidence`,
     );
   }
 
@@ -761,6 +764,6 @@ function buildSummary(p: {
   if (p.withheld > 0) parts.push(`${plural(p.withheld, "document")} withheld`);
   if (p.deniedTools > 0) parts.push(`${plural(p.deniedTools, "tool call")} refused`);
 
-  const s = parts.join("; ");
-  return s.charAt(0).toUpperCase() + s.slice(1) + ".";
+  const summary = parts.join("; ");
+  return summary.charAt(0).toUpperCase() + summary.slice(1) + ".";
 }

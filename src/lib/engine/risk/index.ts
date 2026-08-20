@@ -22,6 +22,7 @@ import {
   severityFromRisk,
   type Classification,
   type Severity,
+  THREAT_META,
 } from "../taxonomy";
 import type {
   AnalysisContext,
@@ -114,7 +115,7 @@ export function assessRisk(inputs: RiskInputs): RiskAssessment {
     add(
       "threatConfidence",
       "Threat detection confidence",
-      `${plural(fusion.threats.length, "threat type")} detected; the strongest is ${fusion.primary.threatType.replace(/_/g, " ").toLowerCase()} at ${(fusion.maxConfidence * 100).toFixed(0)}% confidence across ${plural(fusion.primary.agreement, "independent detection layer")}`,
+      `${plural(fusion.threats.length, "threat type")} detected; the strongest is ${THREAT_META[fusion.primary.threatType].label} at ${(fusion.maxConfidence * 100).toFixed(0)}% confidence across ${plural(fusion.primary.agreement, "independent detection layer")}`,
       fusion.maxConfidence,
       RISK_WEIGHTS.threatConfidence,
     );
@@ -122,7 +123,7 @@ export function assessRisk(inputs: RiskInputs): RiskAssessment {
     add(
       "threatSeverity",
       "Intrinsic threat severity",
-      `${fusion.primary.threatType.replace(/_/g, " ").toLowerCase()} carries a baseline severity of ${fusion.primary.severity.toLowerCase()}`,
+      `${THREAT_META[fusion.primary.threatType].label} carries a baseline severity of ${fusion.primary.severity.toLowerCase()}`,
       SEVERITY_VALUE[fusion.primary.severity],
       RISK_WEIGHTS.threatSeverity,
     );

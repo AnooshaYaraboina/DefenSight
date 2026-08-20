@@ -14,7 +14,9 @@
  * Both must agree before a request proceeds, and the most restrictive outcome
  * of the two always wins.
  */
-import { mostRestrictive, type Channel, type Decision } from "../taxonomy";
+import { mostRestrictive, type Channel, type Decision ,
+  THREAT_META,
+} from "../taxonomy";
 import type {
   DetectionResult,
   GuardrailConfig,
@@ -169,7 +171,7 @@ export function evaluateGuardrails(input: GuardrailInput): GuardrailResult {
       const reasons: string[] = [];
       if (peakThreat) {
         reasons.push(
-          `${peakThreat.threatType.replace(/_/g, " ").toLowerCase()} confirmed at ${(peakThreat.confidence * 100).toFixed(0)}% fused confidence across ${peakThreat.agreement} independent layer(s)`,
+          `${THREAT_META[peakThreat.threatType].label} confirmed at ${(peakThreat.confidence * 100).toFixed(0)}% fused confidence across ${peakThreat.agreement} independent layer(s)`,
         );
       }
       if (matchingSensitive.length > 0) {

@@ -256,7 +256,10 @@ export function AttackChainStrip({
             )}
           >
             {stage.interventionPoint ? <Ban className="size-2.5" /> : <CircleDot className="size-2.5" />}
-            {STAGE_META[stage.stage]?.label ?? stage.label}
+            {/* The trace's own label is more specific than the generic stage
+                name — two stages can share a PipelineStage and still describe
+                different work. */}
+            {stage.label || STAGE_META[stage.stage]?.label}
           </li>
         </React.Fragment>
       ))}
