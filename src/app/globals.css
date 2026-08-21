@@ -794,7 +794,6 @@
   [data-sentry="success"] .ds-sy-shadow{ animation: ds-sy-shadow-jump 2.8s var(--ease-out-soft) 1; }
   [data-sentry="success"] .ds-sy-mouth { animation: ds-sy-mouth-o 2.8s linear 1; }
   [data-sentry="success"] .ds-sy-core  { animation-duration: 0.7s; }
-  .ds-sy-confetti { animation: ds-sy-confetti 2.6s cubic-bezier(0.3, 0, 0.7, 1) 1; }
 
   /* ---- alarm: flinch, then guard ---- */
   [data-sentry="alarm"] .ds-sy-all   { animation: ds-sy-recoil 1.7s var(--ease-out-soft) 1; }
@@ -955,4 +954,96 @@
 
 @media (prefers-reduced-motion: reduce) {
   [data-sentry="dancing"] * { animation: none !important; }
+}
+
+/* ==========================================================================
+   Party poppers
+   Two cannons at the lower corners. Horizontal travel is linear and vertical
+   rises, hangs and falls, which is why each piece is three nested spans —
+   one animation cannot ease two axes differently.
+   ========================================================================== */
+
+@keyframes ds-pop-x {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(var(--px, 0px)); }
+}
+
+@keyframes ds-pop-y {
+  0%   { transform: translateY(0); }
+  42%  { transform: translateY(var(--py, -80px)); }
+  100% { transform: translateY(calc(var(--py, -80px) + var(--pfall, 200px))); }
+}
+
+@keyframes ds-pop-piece {
+  0%   { transform: rotate(0deg) scale(0.5); opacity: 0; }
+  6%   { opacity: 1; transform: rotate(calc(var(--protate, 360deg) * 0.06)) scale(1); }
+  72%  { opacity: 1; }
+  100% { transform: rotate(var(--protate, 360deg)) scale(0.85); opacity: 0; }
+}
+
+/* A kick when it fires. */
+/* Recoil only — the cone carries its own angle, see sentry.tsx. */
+@keyframes ds-pop-fire {
+  0%, 22%, 100% { transform: translateY(0) scale(1); }
+  5%            { transform: translateY(5px) scale(1.18); }
+  12%           { transform: translateY(1px) scale(0.98); }
+}
+
+@keyframes ds-pop-flash {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  5%   { opacity: 0.95; transform: translate(-50%, -50%) scale(1); }
+  20%  { opacity: 0; transform: translate(-50%, -50%) scale(1.9); }
+  100% { opacity: 0; }
+}
+
+@layer utilities {
+  /* One cycle for the whole burst, so muzzle flash, recoil and pieces stay
+     in phase however many times it repeats. */
+  .ds-pop-mount {
+    width: 0;
+    height: 0;
+    animation: ds-pop-fire 1.9s var(--ease-out-soft) infinite;
+  }
+
+  /* A truncated cone, mouth up. A rounded rectangle read as a battery. */
+  .ds-pop-body {
+    width: 26px;
+    height: 34px;
+    margin-left: -13px;
+    margin-top: -17px;
+    clip-path: polygon(50% 0%, 100% 4%, 68% 100%, 32% 100%, 0% 4%);
+    background: linear-gradient(148deg, #4a4a63 0%, #2a2a3a 42%, #16161f 100%);
+    box-shadow: inset 0 3px 0 color-mix(in oklab, var(--color-brand) 45%, transparent);
+  }
+  /* Gold band, so it reads as a party popper and not as machinery. */
+  .ds-pop-body::after {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 4px;
+    width: 16px;
+    height: 4px;
+    border-radius: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-medium), transparent);
+    opacity: 0.85;
+  }
+
+  .ds-pop-flash {
+    width: 34px;
+    height: 34px;
+    background: radial-gradient(circle, #fff 0%, var(--color-medium) 30%, var(--color-brand) 52%, transparent 74%);
+    animation: ds-pop-flash 1.9s var(--ease-out-soft) infinite;
+  }
+
+  .ds-pop-x     { animation: ds-pop-x 1.9s linear both; }
+  .ds-pop-y     { animation: ds-pop-y 1.9s cubic-bezier(0.18, 0.68, 0.5, 1) both; }
+  .ds-pop-piece { border-radius: 1px; animation: ds-pop-piece 1.9s linear both; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-pop-mount, .ds-pop-flash, .ds-pop-x, .ds-pop-y, .ds-pop-piece {
+    animation: none !important;
+  }
+  /* Frozen pieces would pile at the muzzle. */
+  .ds-pop-x { display: none; }
 }

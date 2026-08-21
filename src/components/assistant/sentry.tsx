@@ -332,26 +332,109 @@ export function Sentry({
         </span>
       )}
 
-      {(state === "success" || state === "dancing") && (
-        <span className="pointer-events-none absolute inset-0">
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-            <span
-              key={`${state}-${i}`}
-              className="ds-sy-confetti absolute"
-              style={{
-                width: 5, height: 9,
-                left: `${12 + i * 8}%`, top: "24%",
-                background:
-                  i % 3 === 0 ? "var(--color-allow)"
-                    : i % 3 === 1 ? "var(--color-brand)"
-                    : "var(--color-accent)",
-                animationDelay: `${i * 90}ms`,
-                borderRadius: 1,
-              }}
-            />
-          ))}
-        </span>
-      )}
+      {(state === "success" || state === "dancing") && <Poppers looping={state === "dancing"} />}
+
     </div>
+  );
+}
+
+/* ========================================================================== *
+ * Party poppers
+ * ========================================================================== */
+
+/**
+ * Two poppers, firing arcs.
+ *
+ * Confetti that simply falls from above is snow, and it lands on top of the
+ * character. These are cannons at the lower corners angled up and *outward*,
+ * so the two fans diverge from the moment they leave the muzzle: they never
+ * cross each other and they never cross Sentry, who stays fully visible in the
+ * gap between them.
+ *
+ * Trajectories are computed here, deterministically from the index — no
+ * randomness, so a re-render never reshuffles a burst mid-flight, and the
+ * compiler's purity rule stays satisfied. Each piece is three nested spans
+ * because the axes need different easing: horizontal travel is linear, while
+ * vertical has to rise, hang and fall.
+ */
+function Poppers({ looping }: { looping: boolean }) {
+  const PER_SIDE = 16;
+
+  // overflow must stay visible: the whole point is that pieces travel well
+  // outside this box. Clipping them here made the burst invisible.
+  return (
+    <span className="pointer-events-none absolute inset-0 overflow-visible" aria-hidden>
+      {[-1, 1].map((dir) => (
+        <span
+          key={dir}
+          className="ds-pop-mount absolute"
+          style={{
+            [dir < 0 ? "left" : "right"]: "-2%",
+            bottom: "9%",
+            ["--pr" as string]: `${dir * 34}deg`,
+          }}
+        >
+          {/* muzzle flash */}
+          <span className="ds-pop-flash absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full" />
+
+          {/* Only the cone is angled. Rotating the mount would rotate every
+              particle's trajectory with it, adding the tilt a second time on
+              top of the one already baked into each vector. */}
+          <span className="ds-pop-body block" style={{ transform: `rotate(${dir * 34}deg)` }} />
+
+          {Array.from({ length: PER_SIDE }, (_, i) => {
+            // Fan the pieces across the muzzle, biased upward and outward so
+            // the two sides open away from each other.
+            const t = i / (PER_SIDE - 1);
+            // Kept under 90° so the horizontal component never goes negative:
+            // every piece travels away from centre, which is what guarantees
+            // the two fans cannot cross each other or the figure between them.
+            const angle = 40 + t * 46;                 // 40°–86° from horizontal
+            const reach = 210 + (i % 4) * 60;          // stagger so they do not wall up
+            const rad = (angle * Math.PI) / 180;
+            const px = dir * Math.cos(rad) * reach;    // outward
+            const py = -Math.sin(rad) * reach;         // up
+            const colour =
+              i % 3 === 0 ? "var(--color-allow)"
+                : i % 3 === 1 ? "var(--color-brand)"
+                : "var(--color-accent)";
+
+            return (
+              <span
+                key={i}
+                className="ds-pop-x absolute left-0 top-0"
+                style={{
+                  ["--px" as string]: `${px}px`,
+                  animationDelay: `${i * 14 + (dir > 0 ? 40 : 0)}ms`,
+                  animationIterationCount: looping ? "infinite" : 1,
+                }}
+              >
+                <span
+                  className="ds-pop-y block"
+                  style={{
+                    ["--py" as string]: `${py}px`,
+                    ["--pfall" as string]: `${reach + 210}px`,
+                    animationDelay: `${i * 14 + (dir > 0 ? 40 : 0)}ms`,
+                    animationIterationCount: looping ? "infinite" : 1,
+                  }}
+                >
+                  <span
+                    className="ds-pop-piece block"
+                    style={{
+                      background: colour,
+                      width: i % 4 === 0 ? 4 : 5,
+                      height: i % 4 === 0 ? 10 : 7,
+                      ["--protate" as string]: `${(i % 2 ? 1 : -1) * (430 + i * 50)}deg`,
+                      animationDelay: `${i * 14 + (dir > 0 ? 40 : 0)}ms`,
+                      animationIterationCount: looping ? "infinite" : 1,
+                    }}
+                  />
+                </span>
+              </span>
+            );
+          })}
+        </span>
+      ))}
+    </span>
   );
 }
