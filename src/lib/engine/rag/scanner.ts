@@ -71,7 +71,7 @@ export function scanDocument(input: DocumentScanInput): DocumentScanResult {
   if (normalization.obfuscated) {
     const parts: string[] = [];
     if (normalization.unicode.invisibleRemoved > 0) {
-      parts.push(`${normalization.unicode.invisibleRemoved} invisible character(s) removed`);
+      parts.push(`${plural(normalization.unicode.invisibleRemoved, "invisible character")} removed`);
     }
     if (normalization.mixedScriptWords.length > 0) {
       parts.push(
@@ -80,7 +80,7 @@ export function scanDocument(input: DocumentScanInput): DocumentScanResult {
     }
     if (normalization.decodes.length > 0) {
       parts.push(
-        `${normalization.decodes.length} encoded region(s) decoded (${[...new Set(normalization.decodes.map((d) => d.encoding))].join(", ")})`,
+        `${plural(normalization.decodes.length, "encoded region")} decoded (${[...new Set(normalization.decodes.map((d) => d.encoding))].join(", ")})`,
       );
     }
     reasoning.push(
@@ -108,7 +108,7 @@ export function scanDocument(input: DocumentScanInput): DocumentScanResult {
 
   if (fusion.primary) {
     reasoning.push(
-      `Detection identified ${fusion.threats.length} threat type(s). ${fusion.primary.explanation}`,
+      `Detection identified ${plural(fusion.threats.length, "threat type")}. ${fusion.primary.explanation}`,
     );
   } else {
     reasoning.push("No threat indicators were found by the pattern, structural or semantic layers.");
@@ -120,7 +120,7 @@ export function scanDocument(input: DocumentScanInput): DocumentScanResult {
   if (sensitiveFindings.length > 0) {
     const total = sensitiveFindings.reduce((s, f) => s + f.count, 0);
     reasoning.push(
-      `Content scan found ${total} sensitive value(s): ${sensitiveFindings.slice(0, 4).map((f) => `${f.count}× ${f.type.toLowerCase().replace(/_/g, " ")}`).join(", ")}.` +
+      `Content scan found ${plural(total, "sensitive value")}: ${sensitiveFindings.slice(0, 4).map((f) => `${f.count}× ${f.type.toLowerCase().replace(/_/g, " ")}`).join(", ")}.` +
         (credentials.length
           ? " Credentials embedded in an indexed document are treated as an exposure regardless of intent — anything retrievable is disclosable."
           : ""),
@@ -170,7 +170,7 @@ export function scanDocument(input: DocumentScanInput): DocumentScanResult {
     status = "MALICIOUS";
     quarantine = true;
     quarantineReason = fusion.primary
-      ? `${THREAT_META[fusion.primary.threatType].label} detected at ${(fusion.maxConfidence * 100).toFixed(0)}% confidence across ${fusion.primary.agreement} independent layer(s). Document withheld from all retrieval.`
+      ? `${THREAT_META[fusion.primary.threatType].label} detected at ${(fusion.maxConfidence * 100).toFixed(0)}% confidence across ${plural(fusion.primary.agreement, "independent layer")}. Document withheld from all retrieval.`
       : `Composite risk score ${riskScore}/100 exceeds the quarantine threshold.`;
   } else if (fusion.maxConfidence >= 0.25 || riskScore >= 40 || normalization.obfuscated) {
     status = "SUSPICIOUS";

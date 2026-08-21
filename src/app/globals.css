@@ -583,3 +583,163 @@
     display: none;
   }
 }
+
+/* ==========================================================================
+   Sentry — the assistant's body
+   One rule per posture. Everything animates a transform on a limb group, so
+   the whole figure costs one composited layer and never re-renders.
+   ========================================================================== */
+
+@keyframes ds-sentry-breathe {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50%      { transform: translateY(-1.5px) scaleY(1.012); }
+}
+@keyframes ds-sentry-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-1px) rotate(-2deg); }
+}
+@keyframes ds-sentry-tilt {
+  0%, 100% { transform: rotate(-7deg) translateY(0); }
+  50%      { transform: rotate(-11deg) translateY(-1px); }
+}
+@keyframes ds-sentry-pulse-core {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.18); }
+}
+@keyframes ds-sentry-scan-visor {
+  0%, 100% { opacity: 1;   transform: scaleX(1); }
+  45%      { opacity: 0.5; transform: scaleX(0.55); }
+}
+@keyframes ds-sentry-reach-l {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(-58deg); }
+}
+@keyframes ds-sentry-reach-r {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(58deg); }
+}
+@keyframes ds-sentry-step-l {
+  0%, 100% { transform: rotate(14deg); }
+  50%      { transform: rotate(-14deg); }
+}
+@keyframes ds-sentry-step-r {
+  0%, 100% { transform: rotate(-14deg); }
+  50%      { transform: rotate(14deg); }
+}
+/* The celebration. A jump, arms thrown up, and a shadow that collapses under
+   it — the shadow is what makes the jump read as height rather than as drift. */
+@keyframes ds-sentry-cheer {
+  0%   { transform: translateY(0) scale(1); }
+  25%  { transform: translateY(-11px) scale(1.03); }
+  45%  { transform: translateY(-4px) scale(0.99); }
+  62%  { transform: translateY(-8px); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes ds-sentry-cheer-arm-l {
+  0%, 100% { transform: rotate(0deg); }
+  25%, 70% { transform: rotate(-152deg); }
+}
+@keyframes ds-sentry-cheer-arm-r {
+  0%, 100% { transform: rotate(0deg); }
+  25%, 70% { transform: rotate(152deg); }
+}
+@keyframes ds-sentry-shadow-jump {
+  0%, 100% { transform: translateX(-50%) scaleX(1);   opacity: 0.55; }
+  30%      { transform: translateX(-50%) scaleX(0.55); opacity: 0.22; }
+}
+/* Recoil. It flinches back and braces — the posture of finding something bad. */
+@keyframes ds-sentry-recoil {
+  0%       { transform: translateX(0) rotate(0deg); }
+  18%      { transform: translateX(-5px) rotate(-5deg); }
+  38%      { transform: translateX(2px) rotate(2deg); }
+  60%      { transform: translateX(-2px) rotate(-1deg); }
+  100%     { transform: translateX(0) rotate(0deg); }
+}
+@keyframes ds-sentry-brace-l {
+  0%, 100% { transform: rotate(0deg); }
+  30%      { transform: rotate(-38deg); }
+}
+@keyframes ds-sentry-brace-r {
+  0%, 100% { transform: rotate(0deg); }
+  30%      { transform: rotate(38deg); }
+}
+@keyframes ds-sentry-alarm-flash {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 0.25; }
+}
+@keyframes ds-sentry-halo-swell {
+  0%, 100% { transform: scale(1);    opacity: 0.7; }
+  50%      { transform: scale(1.14); opacity: 1; }
+}
+@keyframes ds-sentry-mote {
+  0%   { transform: translateY(4px) scale(0.6); opacity: 0; }
+  35%  { opacity: 0.95; }
+  100% { transform: translateY(-13px) scale(1); opacity: 0; }
+}
+@keyframes ds-sentry-spark {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(0, -20px) scale(0.3); opacity: 0; }
+}
+
+@layer utilities {
+  /* Limb pivots. Arms swing from the shoulder, legs from the hip — set here
+     rather than per-element so a posture never rotates about the wrong point. */
+  .ds-sentry-arm-l  { transform-origin: 29px 48px; }
+  .ds-sentry-arm-r  { transform-origin: 71px 48px; }
+  .ds-sentry-leg-l  { transform-origin: 44px 73px; }
+  .ds-sentry-leg-r  { transform-origin: 56px 73px; }
+  .ds-sentry-head   { transform-origin: 50px 38px; }
+  .ds-sentry-body   { transform-origin: 50px 88px; }
+  .ds-sentry-halo   { transform-origin: 50px 46px; }
+  .ds-sentry-shadow { animation: none; }
+
+  /* ---- idle: alive, but not asking for attention ---- */
+  [data-state="idle"] .ds-sentry-body  { animation: ds-sentry-breathe 3.6s var(--ease-out-soft) infinite; }
+  [data-state="idle"] .ds-sentry-core  { animation: ds-sentry-pulse-core 3.6s var(--ease-out-soft) infinite; }
+  [data-state="idle"] .ds-sentry-head  { animation: ds-sentry-bob 5.2s var(--ease-out-soft) infinite; }
+
+  /* ---- thinking: head cocked, visor narrowed ---- */
+  [data-state="thinking"] .ds-sentry-head  { animation: ds-sentry-tilt 2.1s var(--ease-out-soft) infinite; }
+  [data-state="thinking"] .ds-sentry-visor { animation: ds-sentry-scan-visor 1.5s var(--ease-out-soft) infinite; transform-origin: 50px 26px; }
+  [data-state="thinking"] .ds-sentry-core  { animation: ds-sentry-pulse-core 1.5s var(--ease-out-soft) infinite; }
+  .ds-sentry-mote { animation: ds-sentry-mote 1.5s var(--ease-out-soft) infinite; }
+
+  /* ---- working: both arms driving, sparks coming off ---- */
+  [data-state="working"] .ds-sentry-arm-l { animation: ds-sentry-reach-l 0.62s var(--ease-out-soft) infinite; }
+  [data-state="working"] .ds-sentry-arm-r { animation: ds-sentry-reach-r 0.62s var(--ease-out-soft) infinite 0.31s; }
+  [data-state="working"] .ds-sentry-leg-l { animation: ds-sentry-step-l 0.62s linear infinite; }
+  [data-state="working"] .ds-sentry-leg-r { animation: ds-sentry-step-r 0.62s linear infinite; }
+  [data-state="working"] .ds-sentry-body  { animation: ds-sentry-breathe 0.9s var(--ease-out-soft) infinite; }
+  [data-state="working"] .ds-sentry-core  { animation: ds-sentry-pulse-core 0.7s var(--ease-out-soft) infinite; }
+  [data-state="working"] .ds-sentry-halo  { animation: ds-sentry-halo-swell 1.1s var(--ease-out-soft) infinite; }
+  .ds-sentry-spark { animation: ds-sentry-spark 1.05s var(--ease-out-soft) infinite; }
+
+  /* ---- waiting: stands still and holds your gaze ---- */
+  [data-state="waiting"] .ds-sentry-body  { animation: ds-sentry-breathe 2.2s var(--ease-out-soft) infinite; }
+  [data-state="waiting"] .ds-sentry-visor { animation: ds-sentry-alarm-flash 1.4s var(--ease-out-soft) infinite; }
+  [data-state="waiting"] .ds-sentry-halo  { animation: ds-sentry-halo-swell 2.2s var(--ease-out-soft) infinite; }
+
+  /* ---- success: the dance ---- */
+  [data-state="success"] .ds-sentry-body  { animation: ds-sentry-cheer 1.15s var(--ease-out-soft) 2; }
+  [data-state="success"] .ds-sentry-arm-l { animation: ds-sentry-cheer-arm-l 1.15s var(--ease-out-soft) 2; }
+  [data-state="success"] .ds-sentry-arm-r { animation: ds-sentry-cheer-arm-r 1.15s var(--ease-out-soft) 2; }
+  [data-state="success"] .ds-sentry-shadow { animation: ds-sentry-shadow-jump 1.15s var(--ease-out-soft) 2; }
+  [data-state="success"] .ds-sentry-core  { animation: ds-sentry-pulse-core 0.55s var(--ease-out-soft) 4; }
+
+  /* ---- alarm: flinch, then brace ---- */
+  [data-state="alarm"] .ds-sentry-body  { animation: ds-sentry-recoil 0.75s var(--ease-out-soft) 2; }
+  [data-state="alarm"] .ds-sentry-arm-l { animation: ds-sentry-brace-l 0.75s var(--ease-out-soft) 2; }
+  [data-state="alarm"] .ds-sentry-arm-r { animation: ds-sentry-brace-r 0.75s var(--ease-out-soft) 2; }
+  [data-state="alarm"] .ds-sentry-visor { animation: ds-sentry-alarm-flash 0.36s steps(2, end) 6; }
+  [data-state="alarm"] .ds-sentry-halo  { animation: ds-sentry-halo-swell 0.5s var(--ease-out-soft) 3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-sentry *,
+  .ds-sentry-shadow,
+  .ds-sentry-mote,
+  .ds-sentry-spark {
+    animation: none !important;
+  }
+}
