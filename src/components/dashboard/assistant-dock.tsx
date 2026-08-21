@@ -1,12 +1,11 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Maximize2 } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AssistantConsole } from "@/components/assistant/assistant-console";
-import { AgentAvatar } from "@/components/assistant/agent-avatar";
+import { Sentry } from "@/components/assistant/sentry";
 
 /**
  * Sentry, docked.
@@ -53,7 +52,9 @@ export function AssistantDock({ configured }: { configured: boolean }) {
           )}
           aria-label="Open the security assistant"
         >
-          <AgentAvatar state="idle" size={30} />
+          <span className="grid size-8 place-items-center overflow-hidden rounded-full bg-brand-dim/50">
+            <Sentry state="idle" size={52} className="translate-y-[6px]" />
+          </span>
           <span className="text-xs font-medium text-ink">Ask Sentry</span>
           <kbd className="rounded border border-line-strong bg-inset px-1 font-mono text-[9px] text-ink-4">
             ⌘K
@@ -64,33 +65,35 @@ export function AssistantDock({ configured }: { configured: boolean }) {
       {open && (
         <div
           role="dialog"
+          aria-modal="true"
           aria-label="Security assistant"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-base/80 p-4 backdrop-blur-md"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setOpen(false);
+          }}
+        >
+        <div
           className={cn(
-            "fixed bottom-5 right-5 z-40 flex w-[min(30rem,calc(100vw-2.5rem))] flex-col",
-            "h-[min(40rem,calc(100dvh-5rem))] overflow-hidden rounded-xl",
-            "border border-line-strong bg-elevated shadow-2xl shadow-black/60 ds-rise",
+            "ds-rise flex w-full max-w-6xl flex-col overflow-hidden rounded-2xl",
+            "h-[min(46rem,calc(100dvh-2rem))]",
+            "border border-line-strong bg-surface shadow-2xl shadow-black/70",
           )}
         >
           <header className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-2">
             <span className="ds-eyebrow flex-1">Security assistant</span>
-            <Link
-              href="/assistant"
-              className="rounded p-1 text-ink-4 transition-colors hover:bg-surface-2 hover:text-ink"
-              aria-label="Open full assistant"
-            >
-              <Maximize2 className="size-3.5" />
-            </Link>
+            <kbd className="rounded border border-line-strong bg-inset px-1.5 py-0.5 font-mono text-[9px] text-ink-4">esc</kbd>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="rounded p-1 text-ink-4 transition-colors hover:bg-surface-2 hover:text-ink"
               aria-label="Close assistant"
             >
-              <ChevronDown className="size-4" />
+              <X className="size-4" />
             </button>
           </header>
 
-          <AssistantConsole configured={configured} variant="dock" className="min-h-0 flex-1" />
+          <AssistantConsole configured={configured} variant="page" className="min-h-0 flex-1" />
+        </div>
         </div>
       )}
     </>

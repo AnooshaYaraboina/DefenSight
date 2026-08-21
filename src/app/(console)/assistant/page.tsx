@@ -24,7 +24,7 @@ export default async function AssistantPage() {
         }
       />
 
-      <Card className="min-h-0 flex-1 overflow-hidden">
+      <Card className="min-h-0 flex-1 overflow-hidden p-0">
         <AssistantConsole configured={isConfigured()} variant="page" className="h-full" />
       </Card>
     </div>
