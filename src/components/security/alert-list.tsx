@@ -78,7 +78,7 @@ export function AlertList({ alerts }: { alerts: AlertRow[] }) {
           <span className="flex-1 text-xs font-medium text-brand">
             {incoming.length} new alert{incoming.length === 1 ? "" : "s"} since this page loaded
           </span>
-          <span className="text-[11px] text-brand/80">Refresh to view</span>
+          <span className="text-[11px] text-brand-text/80">Refresh to view</span>
         </button>
       )}
 

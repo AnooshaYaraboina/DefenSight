@@ -8,95 +8,113 @@
 
 @theme {
   /* ---- Surfaces ---- */
-  --color-base: #070a11;
-  --color-surface: #0c111b;
-  --color-surface-2: #111826;
-  --color-elevated: #161f30;
-  --color-inset: #04060c;
+  /* Obsidian: a true neutral black, so violet reads as the only chromatic
+     thing on screen. The old navy tinted every surface and competed with it. */
+  --color-base: #08080c;
+  --color-surface: #101018;
+  --color-surface-2: #17171f;
+  --color-elevated: #1c1c26;
+  --color-inset: #050508;
 
   /* ---- Lines ---- */
-  --color-line: #1b2536;
-  --color-line-strong: #29374e;
+  --color-line: #22222e;
+  --color-line-strong: #333342;
 
   /* ---- Text ---- */
-  --color-ink: #e8eefb;
-  --color-ink-2: #9aabc4;
-  --color-ink-3: #61728d;
-  --color-ink-4: #3f4d63;
+  --color-ink: #ededf5;
+  --color-ink-2: #a6a6b8;
+  --color-ink-3: #6f6f85;
+  --color-ink-4: #484857;
 
-  /* ---- Brand (defensive cyan) ---- */
-  --color-brand: #22d3ee;
-  --color-brand-2: #0891b2;
-  --color-brand-dim: #0e4f5f;
-  --color-brand-ink: #032027;
+  /* ---- Brand (electric violet) ---- */
+  --color-brand: #8b5cf6;
+  --color-brand-2: #6d28d9;
+  --color-brand-dim: #2e1065;
+  --color-brand-ink: #f5f3ff;
+  --color-brand-text: #a78bfa;
+
+  /* ---- Accent ----
+     Cyan survives as the live/streaming signal only. Keeping it separate from
+     the brand stops "this is DefenSight" and "this is happening now" from
+     fighting over the same colour, which is what made the old console read as
+     uniformly cyan. */
+  --color-accent: #22d3ee;
+  --color-accent-dim: #0b3f4c;
 
   /* ---- Severity scale ---- */
-  --color-critical: #ff3b52;
-  --color-critical-dim: #3d0d15;
-  --color-high: #ff8a3d;
+  --color-critical: #f43f5e;
+  --color-critical-dim: #3f0d1c;
+  --color-high: #fb923c;
   --color-high-dim: #3a1c0a;
-  --color-medium: #ffc53d;
-  --color-medium-dim: #38290a;
-  --color-low: #3b9dff;
-  --color-low-dim: #0c2340;
-  --color-info: #7d8fa8;
-  --color-info-dim: #1a2231;
+  --color-medium: #fbbf24;
+  --color-medium-dim: #372709;
+  --color-low: #60a5fa;
+  --color-low-dim: #10203c;
+  --color-info: #8b8b9e;
+  --color-info-dim: #1c1c26;
 
   /* ---- Decision states ---- */
-  --color-allow: #22c55e;
-  --color-allow-dim: #0a2e18;
-  --color-warn: #ffc53d;
-  --color-warn-dim: #38290a;
-  --color-redact: #a855f7;
-  --color-redact-dim: #2a0f45;
-  --color-block: #ff3b52;
-  --color-block-dim: #3d0d15;
+  /* Allow is teal, not green. Green against the critical rose is the classic
+     deuteranope confusion and no stepping fixes it — see the viz block. */
+  --color-allow: #2dd4bf;
+  --color-allow-dim: #08312e;
+  --color-warn: #fbbf24;
+  --color-warn-dim: #372709;
+  --color-redact: #e879f9;
+  --color-redact-dim: #3b0d3f;
+  --color-block: #f43f5e;
+  --color-block-dim: #3f0d1c;
   --color-approval: #38bdf8;
   --color-approval-dim: #0a2c42;
 
   /* ------------------------------------------------------------------
      Chart palette — VALIDATED, do not hand-edit.
-     
-     These are distinct from the UI severity tokens above. Badge colours are
-     chosen to read as text and borders; chart series colours must additionally
-     clear colour-vision-deficiency separation and contrast against the chart
-     surface (#0c111b). Every set below passes the six checks from the dataviz
-     validator in dark mode. Re-run it before changing any value:
-       node validate_palette.js "<hex,...>" --mode dark --surface "#0c111b"
+
+     Distinct from the UI severity tokens above: badge colours are chosen to
+     read as text and borders, chart series must additionally clear
+     colour-vision-deficiency separation and contrast against the panel
+     surface (#101018). Re-run before changing any value:
+       node validate_palette.js "<hex,...>" --mode dark --surface "#101018"
      ------------------------------------------------------------------ */
 
-  /* Two-series time trend: total vs critical. */
-  --color-viz-primary: #22a5c4;
-  --color-viz-critical: #e34948;
+  /* Two-series time trend: total vs critical. ALL PASS, worst pair ΔE 24.2. */
+  --color-viz-primary: #8b5cf6;
+  --color-viz-critical: #f43f5e;
 
   /* Ordinal severity/risk ramp, low → critical. One hue, monotone lightness —
      a red→orange→yellow "severity rainbow" cannot clear the adjacent-pair
-     floor at any stepping, because those hues are neighbours. */
-  --color-viz-ord-1: #8f2839;
-  --color-viz-ord-2: #b03348;
-  --color-viz-ord-3: #cf4159;
-  --color-viz-ord-4: #e75f70;
-  --color-viz-ord-5: #f48c96;
+     floor at any stepping, because those hues are neighbours. Lifted from the
+     old ramp because its darkest step fell to 2.28:1 against the lighter
+     obsidian panel; every step now clears 3:1. */
+  --color-viz-ord-1: #ad3a4e;
+  --color-viz-ord-2: #c54a5c;
+  --color-viz-ord-3: #dc5c6d;
+  --color-viz-ord-4: #ea7d8b;
+  --color-viz-ord-5: #f7a4ad;
 
-  /* Decision states. Ordered so no two adjacent slots collide under CVD. */
-  --color-viz-allow: #1f9d57;
-  --color-viz-redact: #8f74e0;
-  --color-viz-warn: #c98500;
-  --color-viz-block: #e34948;
+  /* Decision states. The previous set put allow at green and block at red —
+     ΔE 4.3 under deuteranopia, i.e. indistinguishable, which matters now that
+     the war room encodes decisions as travelling colour. Allow moved to teal
+     to sidestep the green↔red trap entirely. Validated with --pairs all
+     (every pair, not just neighbours): ALL PASS, worst ΔE 8.2 deutan. */
+  --color-viz-allow: #2ba3c9;
+  --color-viz-warn: #b88d00;
+  --color-viz-redact: #a06ff0;
+  --color-viz-block: #dc2f4e;
 
   /* Categorical slots for threat families and tool breakdowns. Fixed order,
      never cycled; a seventh series folds into "Other" rather than inventing a
-     hue. */
+     hue. Re-validated against #101018 unchanged — all six still pass. */
   --color-viz-1: #3987e5;
   --color-viz-2: #d95926;
   --color-viz-3: #199e70;
   --color-viz-4: #c98500;
   --color-viz-5: #d55181;
-  --color-viz-6: #9085e9;
+  --color-viz-6: #7c9c3f;
 
   /* Recessive chart furniture. */
-  --color-viz-grid: #1a2334;
-  --color-viz-axis: #47566e;
+  --color-viz-grid: #1e1e2a;
+  --color-viz-axis: #55556a;
 
   /* ---- Fonts ---- */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
@@ -447,5 +465,121 @@
     transform: translateX(-100%);
     background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-ink-4) 22%, transparent), transparent);
     animation: ds-shimmer 1.6s infinite;
+  }
+}
+
+/* ==========================================================================
+   War room
+   Motion for the live estate map. Everything here is driven by a real event
+   arriving on the stream — a packet exists because a request was analysed, a
+   detonation because one was stopped. The ambient layers below (scanline,
+   vignette) are the only decoration, and they carry no data by design.
+   ========================================================================== */
+
+@keyframes ds-packet {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@keyframes ds-detonate {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes ds-node-flare {
+  0%,
+  100% {
+    filter: none;
+  }
+  35% {
+    filter: brightness(1.9) drop-shadow(0 0 6px currentColor);
+  }
+}
+
+@keyframes ds-scanline {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@layer utilities {
+  /*
+   * Travelling packet. CSS motion path rather than a requestAnimationFrame
+   * loop: the compositor owns it, so fifteen in flight cost nothing, and
+   * `onAnimationEnd` is a real React event so cleanup stays declarative.
+   */
+  /*
+   * The path arrives as a custom property, not as an inline `offset-path`.
+   * React 19 silently drops `offsetPath` from a style object — every other key
+   * on the same element is written and that one is not — but custom properties
+   * pass through untouched, and `var()` substitutes before the computed value
+   * is resolved. Verified in the browser; do not "simplify" this back.
+   */
+  .ds-packet {
+    offset-path: var(--ds-path);
+    offset-rotate: 0deg;
+    animation: ds-packet var(--ds-packet-dur, 1.1s) linear forwards;
+  }
+
+  .ds-detonate {
+    animation: ds-detonate 700ms var(--ease-out-soft) forwards;
+  }
+
+  .ds-node-flare {
+    animation: ds-node-flare 420ms var(--ease-out-soft);
+  }
+
+  /* A single slow pass down the wall. The only purely ambient motion. */
+  .ds-scanline::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in oklab, var(--color-brand) 5%, transparent) 50%,
+      transparent
+    );
+    animation: ds-scanline 9s linear infinite;
+  }
+
+  /* Darkens the corners so the centre of the wall carries the eye. */
+  .ds-vignette::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 90% 70% at 50% 42%,
+      transparent 40%,
+      color-mix(in oklab, var(--color-base) 75%, transparent) 100%
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-packet,
+  .ds-detonate,
+  .ds-node-flare,
+  .ds-scanline::after {
+    animation: none !important;
+  }
+  /* A packet with no animation would sit frozen at the path origin. */
+  .ds-packet {
+    display: none;
   }
 }

@@ -121,7 +121,7 @@ export default async function LandingPage() {
               <span className="flex size-5 items-center justify-center rounded-full bg-brand/20">
                 <span className="ds-live-dot size-1.5 rounded-full bg-brand text-brand/40" />
               </span>
-              <span className="text-[11px] font-medium text-brand">
+              <span className="text-[11px] font-medium text-brand-text">
                 {stats.events.toLocaleString()} requests analysed · {stats.blocked} attacks stopped
               </span>
             </div>
@@ -425,7 +425,7 @@ export default async function LandingPage() {
 
 function SectionLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className={`flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand ${className ?? ""}`}>
+    <p className={`flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-text ${className ?? ""}`}>
       <span aria-hidden="true" className="h-px w-6 bg-brand/50" />
       {children}
     </p>

@@ -142,7 +142,7 @@ export default async function ThreatsPage({
                 : "All events where the engine confirmed at least one threat."}
             </p>
           </div>
-          <Link href="/monitor" className="text-[11px] text-brand hover:underline">
+          <Link href="/monitor" className="text-[11px] text-brand-text hover:underline">
             Open monitor
           </Link>
         </CardHeader>

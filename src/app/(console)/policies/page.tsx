@@ -76,7 +76,7 @@ export default async function PoliciesPage() {
               {FACT_CATALOGUE.map((f) => (
                 <li key={f.fact} className="border-b border-line pb-2 last:border-0 last:pb-0">
                   <div className="flex items-baseline justify-between gap-2">
-                    <code className="font-mono text-[10px] text-brand">{f.fact}</code>
+                    <code className="font-mono text-[10px] text-brand-text">{f.fact}</code>
                     <span className="shrink-0 rounded bg-inset px-1 py-px font-mono text-[9px] text-ink-4">
                       {f.type}
                     </span>

@@ -185,7 +185,7 @@ export default async function ToolsPage() {
                           className={
                             g.denied
                               ? "rounded border border-critical/30 bg-critical-dim px-1.5 py-0.5 text-[10px] text-critical line-through"
-                              : "rounded border border-line-strong bg-surface-2 px-1.5 py-0.5 text-[10px] text-ink-3 transition-colors hover:border-brand/40 hover:text-brand"
+                              : "rounded border border-line-strong bg-surface-2 px-1.5 py-0.5 text-[10px] text-ink-3 transition-colors hover:border-brand/40 hover:text-brand-text"
                           }
                         >
                           {g.agent}

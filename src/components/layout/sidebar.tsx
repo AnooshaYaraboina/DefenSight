@@ -46,12 +46,24 @@ export function Sidebar({
    * effect body, and the write is skipped until the restore has happened so it
    * cannot clobber the stored value with the default.
    */
+  const wallMode = pathname === "/dashboard";
+
+  /*
+   * Two pieces of state, deliberately: `pref` is what the analyst chose and
+   * what gets persisted, `collapsed` is what is actually on screen. The war
+   * room forces itself collapsed on arrival, and that must not overwrite the
+   * preference — otherwise visiting the dashboard once would silently collapse
+   * the sidebar on every other screen forever.
+   */
+  const [pref, setPref] = React.useState(false);
   const [collapsed, setCollapsed] = React.useState(false);
   const [restored, setRestored] = React.useState(false);
 
   React.useEffect(() => {
     const id = requestAnimationFrame(() => {
-      setCollapsed(localStorage.getItem("defensight:sidebar-collapsed") === "1");
+      const stored = localStorage.getItem("defensight:sidebar-collapsed") === "1";
+      setPref(stored);
+      setCollapsed(window.location.pathname === "/dashboard" ? true : stored);
       setRestored(true);
     });
     return () => cancelAnimationFrame(id);
@@ -59,8 +71,27 @@ export function Sidebar({
 
   React.useEffect(() => {
     if (!restored) return;
-    localStorage.setItem("defensight:sidebar-collapsed", collapsed ? "1" : "0");
-  }, [collapsed, restored]);
+    localStorage.setItem("defensight:sidebar-collapsed", pref ? "1" : "0");
+  }, [pref, restored]);
+
+  /*
+   * Re-derive on navigation. This is the documented "adjust state when a prop
+   * changes" pattern — done during render rather than in an effect so the
+   * sidebar never paints at the wrong width for a frame first.
+   */
+  const [prevPath, setPrevPath] = React.useState(pathname);
+  if (pathname !== prevPath) {
+    setPrevPath(pathname);
+    setCollapsed(pathname === "/dashboard" ? true : pref);
+  }
+
+  function toggle() {
+    const next = !collapsed;
+    setCollapsed(next);
+    // Expanding the rail to navigate away from the wall is not a preference
+    // change, so the war room does not get to rewrite what the analyst chose.
+    if (!wallMode) setPref(next);
+  }
 
   const groups = React.useMemo(() => visibleNav(role), [role]);
 
@@ -120,7 +151,7 @@ export function Sidebar({
         )}
         <button
           type="button"
-          onClick={() => setCollapsed((c) => !c)}
+          onClick={toggle}
           className={cn(
             "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[11px] text-ink-4 transition-colors hover:bg-surface-2 hover:text-ink-2",
             collapsed && "justify-center px-0",

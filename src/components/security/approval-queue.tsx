@@ -128,7 +128,7 @@ export function ApprovalQueue({ approvals }: { approvals: ApprovalRow[] }) {
                   </p>
                   <Link
                     href={`/agents/${a.toolCall.agent.slug}`}
-                    className="text-[11px] text-ink-2 hover:text-brand"
+                    className="text-[11px] text-ink-2 hover:text-brand-text"
                   >
                     {a.toolCall.agent.name}
                   </Link>

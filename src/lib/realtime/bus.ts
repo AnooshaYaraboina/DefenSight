@@ -39,6 +39,13 @@ export interface LiveSecurityEvent {
   redacted: boolean;
   detectionCount: number;
   toolCallCount: number;
+  /*
+   * Slugs of the tools this request actually reached. The war-room map draws a
+   * packet all the way to the tool surface, and guessing which tool from the
+   * agent's grants would be a fiction repeated on the most prominent element
+   * of the product — so the truth travels with the event.
+   */
+  toolSlugs?: string[];
   retrievalCount: number;
   latencyMs: number;
   simulated: boolean;

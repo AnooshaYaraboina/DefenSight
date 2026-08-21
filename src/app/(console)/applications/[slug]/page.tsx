@@ -131,7 +131,7 @@ export default async function ApplicationDetailPage({
           <Card>
             <CardHeader>
               <CardTitle>Recent activity</CardTitle>
-              <Link href={`/monitor?application=${app.slug}`} className="text-[11px] text-brand hover:underline">
+              <Link href={`/monitor?application=${app.slug}`} className="text-[11px] text-brand-text hover:underline">
                 View all
               </Link>
             </CardHeader>

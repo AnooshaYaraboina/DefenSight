@@ -221,7 +221,7 @@ function ConditionTree({ condition, depth = 0 }: { condition: unknown; depth?: n
     return (
       <Tooltip content={fact?.description}>
         <span className="inline-flex flex-wrap items-baseline gap-1.5 rounded border border-line bg-surface px-2 py-1">
-          <code className="font-mono text-[10px] text-brand">{c.fact}</code>
+          <code className="font-mono text-[10px] text-brand-text">{c.fact}</code>
           <span className="text-[10px] text-ink-4">{OP_LABEL[c.op as string] ?? String(c.op)}</span>
           <code className="font-mono text-[10px] text-ink-2">{value}</code>
         </span>

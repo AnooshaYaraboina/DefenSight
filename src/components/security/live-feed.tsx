@@ -70,7 +70,7 @@ export function LiveFeed({
 
         <div className="flex items-center gap-2">
           {pendingWhilePaused > 0 && (
-            <span className="rounded bg-brand-dim/60 px-1.5 py-0.5 font-mono text-[10px] text-brand">
+            <span className="rounded bg-brand-dim/60 px-1.5 py-0.5 font-mono text-[10px] text-brand-text">
               +{pendingWhilePaused} queued
             </span>
           )}

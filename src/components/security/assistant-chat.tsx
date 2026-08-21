@@ -147,7 +147,7 @@ export function AssistantChat({
                   type="button"
                   onClick={() => ask(c.questions[0])}
                   disabled={busy}
-                  className="rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] text-ink-4 transition-colors hover:border-brand/40 hover:text-brand disabled:opacity-50"
+                  className="rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] text-ink-4 transition-colors hover:border-brand/40 hover:text-brand-text disabled:opacity-50"
                 >
                   {c.questions[0]}
                 </button>
@@ -357,7 +357,7 @@ function Exchange({ turn }: { turn: Turn }) {
                         key={s.label}
                         href={s.href}
                         title={s.detail}
-                        className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-surface px-2.5 py-0.5 text-[10px] text-ink-3 transition-colors hover:border-brand/40 hover:text-brand"
+                        className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-surface px-2.5 py-0.5 text-[10px] text-ink-3 transition-colors hover:border-brand/40 hover:text-brand-text"
                       >
                         {s.label}
                         <ArrowUpRight className="size-2.5" />
