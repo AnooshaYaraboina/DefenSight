@@ -2,10 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, Check, Loader2, Send, ShieldAlert, X } from "lucide-react";
+import { ArrowUpRight, Check, History, Loader2, Plus, Send, ShieldAlert, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sentry, type SentryState } from "@/components/assistant/sentry";
-import { SpeechBubble } from "@/components/assistant/speech-bubble";
+import { SpeechBubble, typingDuration } from "@/components/assistant/speech-bubble";
+import { HistoryDrawer } from "@/components/assistant/history-drawer";
+import { Transcript } from "@/components/assistant/transcript";
+import {
+  newSession, saveSession, titleFor,
+  type Session, type Turn, type TurnLine,
+} from "@/lib/assistant/history";
 
 /**
  * The assistant, as a stage rather than a transcript.
@@ -76,17 +82,52 @@ export function AssistantConsole({
   const [busy, setBusy] = React.useState(false);
   const inputRef = React.useRef<HTMLTextAreaElement>(null);
 
+  /*
+   * The live conversation is recorded as it happens and written to storage on
+   * every turn, so a refresh mid-workflow does not lose what was said. `past`
+   * is a conversation loaded from history — while it is set the right column
+   * shows the transcript instead of the live checklist.
+   */
+  const [session, setSession] = React.useState<Session>(() => newSession());
+  const [past, setPast] = React.useState<Session | null>(null);
+  const [historyOpen, setHistoryOpen] = React.useState(false);
+  const turn = React.useRef<Turn | null>(null);
+
+  const record = React.useCallback((mutate: (t: Turn) => void) => {
+    if (!turn.current) return;
+    mutate(turn.current);
+    setSession((prev) => {
+      const rest = prev.turns.filter((t) => t.id !== turn.current!.id);
+      const next = { ...prev, turns: [...rest, turn.current!] };
+      next.title = titleFor(next);
+      saveSession(next);
+      return next;
+    });
+  }, []);
+
   /* Sentry keeps the mouth moving while there are words left to say, then
      settles into whatever it was doing. */
   const settle = React.useRef<SentryState>("idle");
   const say = React.useCallback(
-    (text: string, t: typeof tone = "neutral", after: SentryState = "idle") => {
+    (
+      text: string,
+      t: typeof tone = "neutral",
+      after: SentryState = "idle",
+      /*
+       * Keep whatever posture is already running instead of switching to
+       * "speaking". Without this a set piece set immediately before say() is
+       * overwritten in the same tick, which is why the celebration and the
+       * guard never rendered — the mood was gone before a frame drew.
+       */
+      hold = false,
+    ) => {
       setTone(t);
       setSpeech(text);
       settle.current = after;
-      setMood("speaking");
+      if (!hold) setMood("speaking");
+      record((turnRef) => turnRef.lines.push({ text, tone: t } as TurnLine));
     },
-    [],
+    [record],
   );
   const finishedSpeaking = React.useCallback(() => setMood(settle.current), []);
 
@@ -98,6 +139,17 @@ export function AssistantConsole({
     return () => window.clearTimeout(id);
   }, [say]);
 
+  function startNew() {
+    turn.current = null;
+    setSession(newSession());
+    setPast(null);
+    setPlan(null);
+    setSteps([]);
+    setCarry({});
+    setMood("idle");
+    say("Fresh start. What do you need?", "neutral");
+  }
+
   /* ------------------------------------------------------------------ run */
 
   async function send(text: string) {
@@ -106,6 +158,14 @@ export function AssistantConsole({
 
     setInput("");
     setBusy(true);
+    setPast(null);
+    turn.current = makeTurn(trimmed);
+    setSession((prev) => {
+      const next = { ...prev, turns: [...prev.turns, turn.current!] };
+      next.title = titleFor(next);
+      saveSession(next);
+      return next;
+    });
     setPlan(null);
     setSteps([]);
     setCarry({});
@@ -140,6 +200,13 @@ export function AssistantConsole({
   async function runWorkflow(p: WorkflowPlan) {
     setPlan(p);
     setSteps(p.steps.map((step) => ({ step, status: "pending" })));
+    record((t) => {
+      t.workflow = {
+        title: p.title,
+        intent: p.intent,
+        steps: p.steps.map((step) => ({ label: step.label, status: "pending" })),
+      };
+    });
     say(`${p.intent}. Starting now.`, "neutral", "working");
     await pause(700);
 
@@ -154,7 +221,12 @@ export function AssistantConsole({
         patch(step.id, { status: result.effect ? "awaiting" : "done", result });
         if (result.effect) {
           setMood("waiting");
-          say(`${result.summary} This one changes something, so it's your call.`, "ask", "waiting");
+          say(
+            `${result.summary} This one changes something, so it's your call.`,
+            "ask",
+            "waiting",
+            true,
+          );
           return;
         }
         continue;
@@ -168,12 +240,13 @@ export function AssistantConsole({
 
       if (result.alarm) {
         setMood("alarm");
-        await pause(700);
-        say(result.summary, "alarm", "working");
-        await pause(Math.min(2600, result.summary.length * 18 + 500));
+        await pause(900);
+        // hold: the guard posture owns the beat while the line types.
+        say(result.summary, "alarm", "working", true);
+        await pause(dwellFor(result.summary, 1400));
       } else {
         say(result.summary, "neutral", "working");
-        await pause(Math.min(2000, result.summary.length * 17 + 400));
+        await pause(dwellFor(result.summary, 900));
       }
 
       if (!result.ok) {
@@ -184,7 +257,7 @@ export function AssistantConsole({
 
     setCarry(acc);
     setMood("success");
-    say("All done.", "good", "idle");
+    say("All done.", "good", "idle", true);
   }
 
   async function one(p: WorkflowPlan, stepId: string, acc: Record<string, string>) {
@@ -195,7 +268,20 @@ export function AssistantConsole({
   }
 
   function patch(stepId: string, next: Partial<RunStep>) {
-    setSteps((prev) => prev.map((s) => (s.step.id === stepId ? { ...s, ...next } : s)));
+    setSteps((prev) => {
+      const updated = prev.map((s) => (s.step.id === stepId ? { ...s, ...next } : s));
+      const changed = updated.find((s) => s.step.id === stepId);
+      if (changed) {
+        record((t) => {
+          const row = t.workflow?.steps.find((x) => x.label === changed.step.label);
+          if (row) {
+            row.status = changed.status;
+            row.summary = changed.result?.summary;
+          }
+        });
+      }
+      return updated;
+    });
   }
 
   /* ------------------------------------------------------------ approvals */
@@ -218,11 +304,11 @@ export function AssistantConsole({
       await applyWrite(plan, pending.step.id, carry);
       patch(pending.step.id, { status: "applied" });
       setMood("success");
-      say("Done — applied.", "good", "idle");
+      say("Done — applied.", "good", "idle", true);
     } catch (error) {
       patch(pending.step.id, { status: "failed" });
       setMood("alarm");
-      say(error instanceof Error ? error.message : "Could not apply that.", "alarm", "idle");
+      say(error instanceof Error ? error.message : "Could not apply that.", "alarm", "idle", true);
     } finally {
       setBusy(false);
     }
@@ -260,6 +346,13 @@ export function AssistantConsole({
 
   return (
     <div className={cn("relative flex min-h-0 flex-col overflow-hidden", className)}>
+      <HistoryDrawer
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        currentId={past?.id ?? session.id}
+        onPick={(s) => setPast(s)}
+        onNew={startNew}
+      />
       {/* Ambient ground so the figure stands in a place rather than on a panel. */}
       <div className="ds-grid-bg pointer-events-none absolute inset-0 opacity-[0.35]" />
       <div
@@ -269,6 +362,37 @@ export function AssistantConsole({
             "radial-gradient(ellipse 60% 45% at 50% 62%, color-mix(in oklab, var(--color-brand) 9%, transparent), transparent 70%)",
         }}
       />
+
+      <div className="relative z-10 flex shrink-0 items-center gap-2 px-3 pt-3">
+        <button
+          type="button"
+          onClick={() => setHistoryOpen(true)}
+          className="flex items-center gap-1.5 rounded-lg border border-line bg-surface/70 px-2.5 py-1.5 text-[11px] text-ink-3 transition-colors hover:border-line-strong hover:text-ink"
+        >
+          <History className="size-3.5" />
+          History
+        </button>
+        <button
+          type="button"
+          onClick={startNew}
+          className="flex items-center gap-1.5 rounded-lg border border-line bg-surface/70 px-2.5 py-1.5 text-[11px] text-ink-3 transition-colors hover:border-brand/40 hover:text-ink"
+        >
+          <Plus className="size-3.5" />
+          New chat
+        </button>
+        {past && (
+          <span className="ml-1 flex items-center gap-2 text-[10px] text-ink-4">
+            viewing an earlier conversation
+            <button
+              type="button"
+              onClick={() => setPast(null)}
+              className="rounded border border-line-strong px-1.5 py-0.5 text-ink-3 transition-colors hover:text-ink"
+            >
+              back to now
+            </button>
+          </span>
+        )}
+      </div>
 
       <div className={cn("relative flex min-h-0 flex-1", page ? "gap-6 p-6" : "flex-col p-3")}>
         {/* ---------------------------------------------------- the stage */}
@@ -297,7 +421,12 @@ export function AssistantConsole({
         </div>
 
         {/* ------------------------------------------------- what it's doing */}
-        {plan ? (
+        {past ? (
+          <Transcript
+            session={past}
+            className={cn(page ? "w-[23rem] shrink-0" : "mt-3 max-h-[13rem]")}
+          />
+        ) : plan ? (
           <div
             className={cn(
               "ds-panel min-h-0 overflow-y-auto",
@@ -506,4 +635,21 @@ async function call(url: string, method: string, body: Record<string, unknown>) 
   return data;
 }
 
+/* Module scope: the compiler's purity rule rejects a clock read inside the
+   component, and a turn needs both a timestamp and a unique id. */
+function makeTurn(user: string): Turn {
+  const at = Date.now();
+  return { id: `t${at}-${Math.random().toString(36).slice(2, 7)}`, at, user, lines: [] };
+}
+
 const pause = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
+
+/**
+ * How long to stay on a line. Derived from the reveal rather than guessed:
+ * the old formula capped dwell at 2s while a 200-character finding took 3.2s
+ * to type, so the next step remounted the bubble mid-sentence and the reader
+ * never saw the end of it.
+ */
+function dwellFor(text: string, breath: number): number {
+  return typingDuration(text) + breath;
+}
