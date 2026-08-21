@@ -29,7 +29,10 @@ import { cn } from "@/lib/utils";
 
 export type SentryState =
   | "idle" | "listening" | "thinking" | "working"
-  | "speaking" | "waiting" | "success" | "alarm";
+  | "speaking" | "waiting" | "success" | "alarm"
+  /* Asked for, rather than earned. Loops until told to stop, where "success"
+     is a single celebratory beat at the end of a job. */
+  | "dancing";
 
 const TONE: Record<SentryState, string> = {
   idle: "var(--color-brand)",
@@ -40,6 +43,7 @@ const TONE: Record<SentryState, string> = {
   waiting: "var(--color-medium)",
   success: "var(--color-allow)",
   alarm: "var(--color-critical)",
+  dancing: "var(--color-brand)",
 };
 
 export function Sentry({
@@ -328,11 +332,11 @@ export function Sentry({
         </span>
       )}
 
-      {state === "success" && (
+      {(state === "success" || state === "dancing") && (
         <span className="pointer-events-none absolute inset-0">
           {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
             <span
-              key={i}
+              key={`${state}-${i}`}
               className="ds-sy-confetti absolute"
               style={{
                 width: 5, height: 9,

@@ -928,3 +928,31 @@
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   Sentry — dancing on request
+   "success" is one celebratory beat at the end of a job. This is the same
+   choreography told to keep going, for when someone just asks.
+   ========================================================================== */
+
+@layer utilities {
+  [data-sentry="dancing"] .ds-sy-all    { animation: ds-sy-dance 2.8s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-arm-l  { animation: ds-sy-cheer-l 2.8s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-arm-r  { animation: ds-sy-cheer-r 2.8s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-fore-l { animation: ds-sy-fore-cheer 2.8s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-fore-r { animation: ds-sy-fore-cheer 2.8s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-leg-l  { animation: ds-sy-kick-l 1.4s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-leg-r  { animation: ds-sy-kick-r 1.4s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-shadow { animation: ds-sy-shadow-jump 2.8s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-torso  { animation: ds-sy-spin 2.8s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-head   { animation: ds-sy-spin 2.8s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-mouth  { animation: ds-sy-talk 0.5s linear infinite; }
+  [data-sentry="dancing"] .ds-sy-aura   { animation: ds-sy-aura 1.4s var(--ease-out-soft) infinite; }
+  [data-sentry="dancing"] .ds-sy-core,
+  [data-sentry="dancing"] .ds-sy-antenna-tip { animation-duration: 0.7s; }
+  [data-sentry="dancing"] .ds-sy-antenna { animation: ds-sy-antenna 0.9s var(--ease-out-soft) infinite; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sentry="dancing"] * { animation: none !important; }
+}

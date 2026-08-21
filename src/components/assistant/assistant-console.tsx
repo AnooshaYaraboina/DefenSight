@@ -170,6 +170,32 @@ export function AssistantConsole({
     setSteps([]);
     setCarry({});
     setSpeech("");
+
+    /*
+     * Performances are answered here rather than by the server. Asking Sentry
+     * to dance is a request to the character, not a query about the estate —
+     * routing it through the assistant API would cost a round trip and come
+     * back as a paragraph explaining that it cannot dance.
+     */
+    const act = performanceFor(trimmed);
+    if (act) {
+      setMood(act.mood);
+      /*
+       * Settle back into the performance, not into idle. The announcing line
+       * is short, so finishing it was cancelling the very thing it announced —
+       * the dance stopped about seven hundred milliseconds in.
+       */
+      say(act.line, act.tone, act.mood, true);
+      if (act.holdMs) {
+        await pause(act.holdMs);
+        setMood("idle");
+        say(act.after ?? "Right — back to it.", "neutral", "idle");
+      }
+      setBusy(false);
+      inputRef.current?.focus();
+      return;
+    }
+
     setMood("thinking");
 
     try {
@@ -640,6 +666,52 @@ async function call(url: string, method: string, body: Record<string, unknown>) 
 function makeTurn(user: string): Turn {
   const at = Date.now();
   return { id: `t${at}-${Math.random().toString(36).slice(2, 7)}`, at, user, lines: [] };
+}
+
+/**
+ * Things Sentry can be asked to *do* rather than answer.
+ *
+ * Deliberately a small, literal list. The point is that the character responds
+ * to being addressed as a character; it is not an attempt to parse intent.
+ */
+function performanceFor(message: string): {
+  mood: SentryState;
+  line: string;
+  tone: "neutral" | "alarm" | "good" | "ask";
+  holdMs?: number;
+  after?: string;
+} | null {
+  const m = message.toLowerCase().trim();
+
+  if (/\b(dance|dancing|boogie|bust a move|show me your moves|celebrate|party)\b/.test(m)) {
+    return {
+      mood: "dancing",
+      line: "Say no more. Watch this.",
+      tone: "good",
+      holdMs: 9000,
+      after: "Thank you, thank you. Back to work.",
+    };
+  }
+  if (/\b(spin|twirl|do a flip|backflip)\b/.test(m)) {
+    return { mood: "dancing", line: "One spin, coming up.", tone: "good", holdMs: 3400, after: "Stuck the landing." };
+  }
+  if (/\b(scan mode|look busy|get to work|work mode)\b/.test(m)) {
+    return { mood: "working", line: "Sweeping the estate.", tone: "neutral", holdMs: 6000, after: "All quiet." };
+  }
+  if (/\b(look scared|panic|red alert|sound the alarm)\b/.test(m)) {
+    return { mood: "alarm", line: "Bracing. Hopefully a drill.", tone: "alarm", holdMs: 3400, after: "False alarm. Nothing on the wire." };
+  }
+  if (/\b(hello|hi|hey|good morning|good evening)\b/.test(m) && m.length < 22) {
+    return { mood: "listening", line: "Hello. What are we looking at?", tone: "neutral" };
+  }
+  if (/\b(who are you|what are you|what can you do)\b/.test(m)) {
+    return {
+      mood: "speaking",
+      line: "I read your security data and I run jobs against it — scans, investigations, triage. Anything that would change something, I stop and ask you first.",
+      tone: "neutral",
+    };
+  }
+  return null;
 }
 
 const pause = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
