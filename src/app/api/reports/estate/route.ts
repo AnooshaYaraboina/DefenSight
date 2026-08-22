@@ -25,43 +25,74 @@ const WINDOW_DAYS = 30;
 async function build(preparedFor: string) {
   const since = new Date(Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
-  const [incidents, events, blocked, redacted, approvals, quarantined, policyRows] =
-    await Promise.all([
-      prisma.incident.findMany({
-        where: { openedAt: { gte: since } },
-        orderBy: [{ severity: "asc" }, { openedAt: "desc" }],
-        include: {
-          application: { select: { name: true } },
-          agent: { select: { name: true } },
-          events: {
-            take: 1,
-            orderBy: { createdAt: "asc" },
-            select: { riskScore: true, stageTrace: true },
-          },
+  const [
+    incidents,
+    events,
+    blocked,
+    redacted,
+    approvals,
+    quarantined,
+    policyRows,
+    guardrailRows,
+    decisionRows,
+    layerRows,
+    detections,
+    applications,
+    agents,
+    policyCount,
+    guardrailCount,
+  ] = await Promise.all([
+    prisma.incident.findMany({
+      where: { openedAt: { gte: since } },
+      orderBy: [{ severity: "asc" }, { openedAt: "desc" }],
+      include: {
+        application: { select: { name: true } },
+        agent: { select: { name: true } },
+        events: {
+          take: 1,
+          orderBy: { createdAt: "asc" },
+          select: { riskScore: true, stageTrace: true },
         },
-      }),
-      prisma.securityEvent.count({ where: { createdAt: { gte: since } } }),
-      prisma.securityEvent.count({ where: { createdAt: { gte: since }, blocked: true } }),
-      prisma.securityEvent.count({ where: { createdAt: { gte: since }, redacted: true } }),
-      prisma.toolApproval.count({ where: { status: "PENDING" } }),
-      prisma.document.count({ where: { quarantined: true } }),
-      prisma.policy.findMany({
-        where: { hitCount: { gt: 0 } },
-        orderBy: { hitCount: "desc" },
-        take: 8,
-        select: { name: true, hitCount: true },
-      }),
-    ]);
+      },
+    }),
+    prisma.securityEvent.count({ where: { createdAt: { gte: since } } }),
+    prisma.securityEvent.count({ where: { createdAt: { gte: since }, blocked: true } }),
+    prisma.securityEvent.count({ where: { createdAt: { gte: since }, redacted: true } }),
+    prisma.toolApproval.count({ where: { status: "PENDING" } }),
+    prisma.document.count({ where: { quarantined: true } }),
+    prisma.policy.findMany({
+      where: { hitCount: { gt: 0 } },
+      orderBy: { hitCount: "desc" },
+      take: 12,
+      select: { name: true, hitCount: true },
+    }),
+    prisma.guardrail.findMany({
+      where: { hitCount: { gt: 0 } },
+      orderBy: { hitCount: "desc" },
+      take: 10,
+      select: { name: true, hitCount: true, direction: true },
+    }),
+    prisma.securityEvent.groupBy({
+      by: ["decision"],
+      where: { createdAt: { gte: since } },
+      _count: { _all: true },
+    }),
+    prisma.detection.groupBy({
+      by: ["layer"],
+      where: { createdAt: { gte: since } },
+      _count: { _all: true },
+    }),
+    prisma.detection.count({ where: { createdAt: { gte: since } } }),
+    prisma.aiApplication.count(),
+    prisma.agent.count(),
+    prisma.policy.count(),
+    prisma.guardrail.count(),
+  ]);
 
   const threatTally = new Map<string, number>();
   for (const i of incidents) {
     threatTally.set(i.threatType, (threatTally.get(i.threatType) ?? 0) + 1);
   }
-
-  const layers = await prisma.detection.groupBy({
-    by: ["layer"],
-    where: { createdAt: { gte: since } },
-  });
 
   const rows: EstateRow[] = incidents.map((i) => {
     const trace = jsonArray<StageTrace>(i.events[0]?.stageTrace ?? null);
@@ -82,17 +113,43 @@ async function build(preparedFor: string) {
     };
   });
 
+  /* Decisions are ordered by severity of outcome rather than by volume — a
+     reader scanning the table expects BLOCK at the top whether it fired twice
+     or two thousand times. */
+  const DECISION_ORDER = ["BLOCK", "REDACT", "REQUIRE_APPROVAL", "WARN", "ALLOW"];
+
   const stats: EstateStats = {
     events,
     blocked,
     redacted,
     approvals,
     quarantined,
-    detectionLayers: layers.map((l) => l.layer.toLowerCase()).sort(),
+    detections,
+    decisions: decisionRows
+      .map((d) => ({ label: d.decision, count: d._count._all }))
+      .sort((a, b) => {
+        const ai = DECISION_ORDER.indexOf(a.label);
+        const bi = DECISION_ORDER.indexOf(b.label);
+        return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+      }),
+    layers: layerRows
+      .map((l) => ({ label: l.layer, count: l._count._all }))
+      .sort((a, b) => b.count - a.count),
     topThreats: [...threatTally]
       .map(([label, count]) => ({ label, count }))
       .sort((a, b) => b.count - a.count),
     topControls: policyRows.map((p) => ({ label: p.name, count: p.hitCount })),
+    topGuardrails: guardrailRows.map((g) => ({
+      label: g.name,
+      count: g.hitCount,
+      direction: g.direction,
+    })),
+    estate: {
+      applications,
+      agents,
+      policies: policyCount,
+      guardrails: guardrailCount,
+    },
   };
 
   const windowLabel = `last ${WINDOW_DAYS} days`;
@@ -104,6 +161,7 @@ async function build(preparedFor: string) {
       org: "Northwind Group",
       preparedFor,
       windowLabel,
+      windowDays: WINDOW_DAYS,
       generatedAt: new Date(),
     }),
   );

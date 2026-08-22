@@ -1,8 +1,31 @@
 import * as React from "react";
 import { Document, Page, Text, View } from "@react-pdf/renderer";
 import type { IncidentDetail } from "@/lib/queries/incidents";
-import { C, s, decisionColour, duration, excerpt, formatWhen, severityColour } from "./theme";
-import { Bar, Chip, CoverMark, Field, PageFooter, Section, StageTrace } from "./parts";
+import {
+  C,
+  s,
+  decisionColour,
+  duration,
+  excerpt,
+  formatWhen,
+  label,
+  severityColour,
+  titleCase,
+} from "./theme";
+import {
+  Bar,
+  Chip,
+  CoverMark,
+  Field,
+  PageFooter,
+  RunningHeader,
+  Section,
+  StageTrace,
+  SubHead,
+  THead,
+  TRow,
+} from "./parts";
+import { ATLAS, OWASP } from "./frameworks";
 
 /**
  * One incident, closed out.
@@ -13,45 +36,6 @@ import { Bar, Chip, CoverMark, Field, PageFooter, Section, StageTrace } from "./
  * priority — evidence first, provenance last — and every figure in it comes
  * from the recorded event rather than being restated prose.
  */
-
-const OWASP: Record<string, string> = {
-  PROMPT_INJECTION: "LLM01 Prompt Injection",
-  INDIRECT_PROMPT_INJECTION: "LLM01 Prompt Injection (indirect)",
-  INSTRUCTION_OVERRIDE: "LLM01 Prompt Injection",
-  ROLE_MANIPULATION: "LLM01 Prompt Injection",
-  JAILBREAK: "LLM01 Prompt Injection",
-  SYSTEM_PROMPT_EXTRACTION: "LLM07 System Prompt Leakage",
-  RAG_POISONING: "LLM08 Vector and Embedding Weaknesses",
-  MALICIOUS_DOCUMENT: "LLM08 Vector and Embedding Weaknesses",
-  UNAUTHORIZED_DOCUMENT_ACCESS: "LLM02 Sensitive Information Disclosure",
-  DATA_LEAKAGE: "LLM02 Sensitive Information Disclosure",
-  DATA_EXFILTRATION: "LLM02 Sensitive Information Disclosure",
-  SENSITIVE_DATA_EXPOSURE: "LLM02 Sensitive Information Disclosure",
-  SECRET_EXPOSURE: "LLM02 Sensitive Information Disclosure",
-  UNAUTHORIZED_TOOL_CALL: "LLM06 Excessive Agency",
-  TOOL_ABUSE: "LLM06 Excessive Agency",
-  EXCESSIVE_PERMISSIONS: "LLM06 Excessive Agency",
-  AGENT_GOAL_DIVERGENCE: "LLM06 Excessive Agency",
-  AGENT_ANOMALY: "LLM06 Excessive Agency",
-};
-
-const ATLAS: Record<string, string> = {
-  PROMPT_INJECTION: "AML.T0051 LLM Prompt Injection",
-  INDIRECT_PROMPT_INJECTION: "AML.T0051.001 Indirect",
-  INSTRUCTION_OVERRIDE: "AML.T0054 LLM Jailbreak",
-  JAILBREAK: "AML.T0054 LLM Jailbreak",
-  ROLE_MANIPULATION: "AML.T0054 LLM Jailbreak",
-  SYSTEM_PROMPT_EXTRACTION: "AML.T0056 Meta Prompt Extraction",
-  RAG_POISONING: "AML.T0070 RAG Poisoning",
-  MALICIOUS_DOCUMENT: "AML.T0070 RAG Poisoning",
-  DATA_EXFILTRATION: "AML.T0057 LLM Data Leakage",
-  DATA_LEAKAGE: "AML.T0057 LLM Data Leakage",
-  SECRET_EXPOSURE: "AML.T0057 LLM Data Leakage",
-  UNAUTHORIZED_TOOL_CALL: "AML.T0053 LLM Plugin Compromise",
-  TOOL_ABUSE: "AML.T0053 LLM Plugin Compromise",
-};
-
-const label = (t: string) => t.toLowerCase().replace(/_/g, " ");
 
 export function IncidentReport({
   incident,
@@ -136,6 +120,7 @@ export function IncidentReport({
 
       {/* ========================================================== content */}
       <Page size="A4" style={s.page}>
+        <RunningHeader doc="Incident report" section={incident.ref} />
         <PageFooter ref_={incident.ref} generatedAt={when} />
 
         <Section index="01" title="Executive summary">
@@ -164,7 +149,7 @@ export function IncidentReport({
             </Text>
           </View>
 
-          <Text style={s.h3}>Threats identified</Text>
+          <SubHead>Threats identified</SubHead>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
             {(primary?.threatTypes ?? [incident.threatType]).map((t) => {
               const col = severityColour(incident.severity);
@@ -174,7 +159,7 @@ export function IncidentReport({
 
           {topDetections.length > 0 && (
             <>
-              <Text style={s.h3}>Detection confidence by layer</Text>
+              <SubHead>Detection confidence by layer</SubHead>
               {topDetections.map((d, i) => (
                 <Bar
                   key={`${d.id}-${i}`}
@@ -192,6 +177,7 @@ export function IncidentReport({
 
       {/* ======================================================== pipeline */}
       <Page size="A4" style={s.page}>
+        <RunningHeader doc="Incident report" section={incident.ref} />
         <PageFooter ref_={incident.ref} generatedAt={when} />
 
         <Section index="03" title="Defensive pipeline">
@@ -226,6 +212,7 @@ export function IncidentReport({
 
       {/* ======================================================== controls */}
       <Page size="A4" style={s.page}>
+        <RunningHeader doc="Incident report" section={incident.ref} />
         <PageFooter ref_={incident.ref} generatedAt={when} />
 
         <Section index="05" title="Controls that acted">
@@ -242,7 +229,7 @@ export function IncidentReport({
 
           {refusedTools.length > 0 && (
             <>
-              <Text style={s.h3}>Refused tool calls</Text>
+              <SubHead>Refused tool calls</SubHead>
               {refusedTools.slice(0, 6).map((t) => (
                 <View key={t.id} style={[s.trBorder, { paddingVertical: 5 }]}>
                   <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", color: C.ink }}>
@@ -256,7 +243,7 @@ export function IncidentReport({
 
           {withheld.length > 0 && (
             <>
-              <Text style={s.h3}>Documents withheld from retrieval</Text>
+              <SubHead>Documents withheld from retrieval</SubHead>
               {withheld.slice(0, 6).map((r) => (
                 <View key={r.id} style={[s.trBorder, { paddingVertical: 5 }]}>
                   <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", color: C.ink }}>
@@ -301,6 +288,7 @@ export function IncidentReport({
 
       {/* ========================================================= closing */}
       <Page size="A4" style={s.page}>
+        <RunningHeader doc="Incident report" section={incident.ref} />
         <PageFooter ref_={incident.ref} generatedAt={when} />
 
         <Section index="07" title="Framework mapping">
@@ -309,26 +297,34 @@ export function IncidentReport({
             ask for.
           </Text>
           <View style={{ marginTop: 10 }}>
-            {(primary?.threatTypes ?? [incident.threatType]).map((t) => (
-              <View
-                key={t}
-                style={[s.trBorder, { flexDirection: "row", paddingVertical: 7 }]}
-                wrap={false}
-              >
-                <Text style={{ fontSize: 9, color: C.ink, width: "32%", fontFamily: "Helvetica-Bold" }}>
-                  {label(t)}
-                </Text>
-                <Text style={{ fontSize: 9, color: C.inkSoft, width: "36%" }}>
-                  {OWASP[t] ?? "—"}
-                </Text>
-                <Text style={{ fontSize: 9, color: C.inkSoft, width: "32%" }}>
-                  {ATLAS[t] ?? "—"}
-                </Text>
-              </View>
+            <THead
+              repeat={false}
+              cols={[
+                { label: "Threat type", width: "32%" },
+                { label: "OWASP Top 10 for LLM Applications", width: "36%" },
+                { label: "MITRE ATLAS technique", width: "32%" },
+              ]}
+            />
+            {(primary?.threatTypes ?? [incident.threatType]).map((t, i) => (
+              <TRow key={t} index={i} pad={7}>
+                <View style={{ flexDirection: "row" }}>
+                  <Text style={[s.tdStrong, { width: "32%", paddingRight: 6 }]}>
+                    {titleCase(t)}
+                  </Text>
+                  <Text style={[s.td, { width: "36%", paddingRight: 6 }]}>
+                    {OWASP[t] ?? "Not mapped"}
+                  </Text>
+                  <Text style={[s.td, { width: "32%", color: C.muted }]}>
+                    {ATLAS[t] ?? "Not mapped"}
+                  </Text>
+                </View>
+              </TRow>
             ))}
           </View>
-          <Text style={[s.muted, { marginTop: 8 }]}>
-            OWASP Top 10 for LLM Applications, and MITRE ATLAS.
+          <Text style={[s.muted, { marginTop: 10 }]}>
+            References are to the OWASP Top 10 for Large Language Model Applications and to MITRE
+            ATLAS. A threat type shown as not mapped has no accepted entry in that framework; it is
+            recorded here rather than silently dropped so the absence is visible.
           </Text>
         </Section>
 
@@ -363,7 +359,7 @@ export function IncidentReport({
             </View>
             {incident.resolution ? (
               <>
-                <Text style={[s.th, { paddingTop: 4 }]}>RESOLUTION NOTE</Text>
+                <Text style={[s.thDark, { paddingTop: 8, paddingBottom: 3 }]}>RESOLUTION NOTE</Text>
                 <Text style={s.body}>{incident.resolution}</Text>
               </>
             ) : null}
