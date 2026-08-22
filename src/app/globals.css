@@ -24,11 +24,15 @@
   --color-ink-3: #61728d;
   --color-ink-4: #3f4d63;
 
-  /* ---- Brand (defensive cyan) ---- */
-  --color-brand: #22d3ee;
-  --color-brand-2: #0891b2;
-  --color-brand-dim: #0e4f5f;
-  --color-brand-ink: #032027;
+  /* ---- Brand (bluebird) ----
+     A vivid azure, kept deeper and more saturated than the two blues already
+     in the severity scale (--color-low #3b9dff, --color-approval #38bdf8) so
+     an interactive accent is never mistaken for a LOW finding or a pending
+     approval. Brand signals "you can act on this"; it never signals state. */
+  --color-brand: #1c7ff0;
+  --color-brand-2: #1259b8;
+  --color-brand-dim: #0a2547;
+  --color-brand-ink: #04121f;
 
   /* ---- Severity scale ---- */
   --color-critical: #ff3b52;
@@ -232,7 +236,7 @@
       var(--color-ink) 0%,
       var(--color-ink) 32%,
       var(--color-brand) 58%,
-      #8ee9ff 74%,
+      #9ecbff 74%,
       var(--color-ink) 96%
     );
     background-clip: text;
