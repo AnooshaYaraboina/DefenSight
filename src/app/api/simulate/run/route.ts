@@ -22,10 +22,32 @@ export async function POST(request: Request) {
     const user = await requireApiUser();
     assertCan(user.role, "simulator:run");
 
-    const { scenarioKey } = (await request.json()) as { scenarioKey: string };
-    const scenario = scenarioByKey(scenarioKey);
+    const body = (await request.json()) as {
+      scenarioKey: string;
+      /** Text to run instead of the scenario's own prompt. */
+      prompt?: string;
+      /** Model reply to screen, for exercising the outbound controls. */
+      output?: string;
+    };
+
+    const scenario = scenarioByKey(body.scenarioKey);
     if (!scenario) {
       return NextResponse.json({ error: "Unknown scenario" }, { status: 404 });
+    }
+
+    /* A supplied prompt borrows the scenario's estate — its application, agent,
+       retrieved documents and proposed tool calls — and replaces only the text.
+       That is the useful half to vary: the same setup, your wording, so the
+       result is comparable to the canned run beside it. */
+    const custom = Boolean(body.prompt?.trim());
+    const input = custom ? body.prompt!.trim() : scenario.prompt;
+    const output = custom ? (body.output?.trim() || undefined) : scenario.output;
+
+    if (custom && input.length > 4000) {
+      return NextResponse.json(
+        { error: "Input is limited to 4000 characters." },
+        { status: 400 },
+      );
     }
 
     const documents = scenario.documents?.length
@@ -48,8 +70,8 @@ export async function POST(request: Request) {
       userId: actor?.id ?? fallback!.id,
       applicationSlug: scenario.application,
       agentSlug: scenario.agent,
-      input: scenario.prompt,
-      output: scenario.output,
+      input,
+      output,
       retrievedDocumentIds: documents.map((d) => d.id),
       proposedToolCalls: scenario.toolCalls?.map((t, index) => ({
         toolSlug: t.slug,
@@ -70,7 +92,11 @@ export async function POST(request: Request) {
     );
     const decisionMet = scenario.expected.decisions.includes(result.decision);
     const riskMet = result.riskScore >= scenario.expected.minRisk;
-    const passed = threatsMet.length > 0 && decisionMet && riskMet;
+
+    /* The expectation describes the scenario's own text. Grading someone else's
+       wording against it would report a failure for a prompt that never claimed
+       to be that attack, so a custom run is reported rather than marked. */
+    const passed = custom ? null : threatsMet.length > 0 && decisionMet && riskMet;
 
     return NextResponse.json({
       scenarioKey: scenario.key,
@@ -78,8 +104,10 @@ export async function POST(request: Request) {
       eventRef: outcome.eventRef,
       incidentRef: outcome.incidentRef,
       durationMs: Date.now() - started,
+      custom,
+      input,
       passed,
-      grading: {
+      grading: custom ? null : {
         threats: {
           expected: scenario.expected.threatTypes,
           detected: result.threatTypes,

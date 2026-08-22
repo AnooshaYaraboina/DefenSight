@@ -4,43 +4,34 @@ import * as React from "react";
 import { useLiveEvents } from "@/lib/hooks/use-live-events";
 import type { WarRoomData } from "@/lib/queries/warroom";
 import type { LiveSecurityEvent } from "@/lib/realtime/bus";
-import { CommandBar } from "@/components/warroom/command-bar";
-import { Flow, toFlowRows } from "@/components/warroom/flow";
-import { Inspector } from "@/components/warroom/inspector";
+import { StatusRail } from "@/components/warroom/status-rail";
+import { PostureCore } from "@/components/warroom/posture-core";
+import { EstateMap } from "@/components/warroom/estate-map";
 import { NeedsYou } from "@/components/warroom/needs-you";
+import { Vitals } from "@/components/warroom/vitals";
+import { Wire } from "@/components/warroom/wire";
 
 /**
  * The wall.
  *
- * Three regions, arranged around one question: what happened to this request?
+ * Five things, and a rail. That count is the design, not a starting point:
  *
- *   1. Command bar — the standing figures, on one line
- *   2. The flow    — every request, with what was actually asked
- *   3. Inspector   — the selected request: input, twelve stages, output
- *   4. Needs you   — the only thing here a person must act on
+ *   1. Posture      — one number, read from across a room
+ *   2. Estate map   — where traffic goes and where it gets stopped
+ *   3. Needs you    — the only thing here a person must act on
+ *   4. Vitals       — four figures
+ *   5. The wire     — the last interception
  *
- * What was removed and why. The previous wall gave roughly 55% of the screen to
- * an estate map: four columns of dots joined by overlapping bezier curves, node
- * labels truncated mid-word. It was the most prominent element in the product
- * and no request could be traced through it. Beside it, a single posture number
- * held a 236px column and four figures held a row.
+ * The previous dashboard carried fourteen features and answered none of them
+ * well. Anything that wants to be the sixth element belongs on its own screen,
+ * reachable from the rail. Please do not add one.
  *
- * Between them, two thirds of a screen spent on things that do not change while
- * you watch, and nowhere in that space could you read a prompt or a response —
- * the two things the pipeline exists to judge. The estate map component is
- * still in the tree; it is a fine visual and belongs somewhere. It does not
- * belong where the traffic should be.
- *
- * `h-dvh` + `overflow-hidden` keeps the no-scroll promise structural rather
- * than something that happens to hold at one window size. Each panel scrolls
- * inside itself.
+ * `h-dvh` + `overflow-hidden` makes the no-scroll promise structural rather
+ * than something that happens to hold at one window size.
  */
 export function Wall({ data }: { data: WarRoomData }) {
   const { events, state } = useLiveEvents({ limit: 40 });
   const started = React.useRef(false);
-  /* An explicit pick, or nothing. The effective selection is derived below
-     rather than stored, so there is no effect racing the stream to set it. */
-  const [picked, setPicked] = React.useState<string | null>(null);
 
   // Traffic auto-starts so the wall is never a still photograph. Guarded by a
   // ref because StrictMode mounts effects twice in development, and left
@@ -74,40 +65,47 @@ export function Wall({ data }: { data: WarRoomData }) {
     }).catch(() => {});
   }
 
-  const rows = React.useMemo(
-    () => toFlowRows(data.recentRequests, events as LiveSecurityEvent[]),
-    [data.recentRequests, events],
-  );
-
-  /* Until someone picks a row the inspector tracks the newest arrival, so the
-     wall is readable the moment it loads. The first click pins it: following
-     the stream after that would pull the panel out from under a reader every
-     few seconds, which is the one thing an inspector must never do. */
-  const selected = picked ?? rows[0]?.id ?? null;
-
   return (
-    <div className="ds-vignette relative flex h-dvh flex-col overflow-hidden bg-base">
-      <CommandBar
+    <div className="ds-vignette ds-scanline relative flex h-dvh flex-col overflow-hidden bg-base">
+      <StatusRail
         org={data.org}
-        posture={data.posture}
         threatLevel={data.threatLevel}
-        vitals={data.vitals}
         connection={state}
         onBurst={burst}
       />
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
+        {/* ---------------------------------------------------- watchfloor */}
         <div className="flex min-h-0 flex-1 gap-2">
-          <Flow
-            rows={rows}
-            selectedId={selected}
-            onSelect={setPicked}
-            className="min-w-0 flex-[1.35]"
+          <PostureCore
+            score={data.posture.score}
+            delta={data.posture.delta}
+            verdict={data.posture.verdict}
+            pulse={data.posture.pulse}
+            className="hidden w-[236px] shrink-0 lg:flex"
           />
-          <Inspector eventId={selected} className="hidden min-w-0 flex-1 lg:flex" />
+
+          <EstateMap
+            nodes={data.topology.nodes}
+            edges={data.topology.edges}
+            agentsByName={data.topology.agentsByName}
+            toolNodeBySlug={data.topology.toolNodeBySlug}
+            events={events as LiveSecurityEvent[]}
+            className="min-w-0 flex-1"
+          />
+
+          <NeedsYou data={data.needsYou} className="hidden w-[272px] shrink-0 xl:flex" />
         </div>
 
-        <NeedsYou data={data.needsYou} className="shrink-0" />
+        <Vitals
+          analysed={data.vitals.analysed}
+          blocked={data.vitals.blocked}
+          critical={data.vitals.critical}
+          blockRate={data.vitals.blockRate}
+          className="shrink-0"
+        />
+
+        <Wire seed={data.recentIntercepts} live={events} />
       </div>
     </div>
   );

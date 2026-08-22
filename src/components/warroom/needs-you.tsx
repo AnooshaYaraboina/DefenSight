@@ -11,11 +11,6 @@ import type { WarRoomData } from "@/lib/queries/warroom";
  *
  * Three counts and at most three items. A queue that shows twenty is a backlog
  * you scroll past; a queue that shows three is a queue you clear.
- *
- * Laid out along the foot of the wall rather than down a side column. As a tall
- * rail it competed with the traffic for the eye and still only ever held three
- * rows; along the bottom it reads as the standing to-do it is, and gives the
- * width back to the request being inspected.
  */
 
 const COUNTS = [
@@ -32,15 +27,10 @@ export function NeedsYou({
   className?: string;
 }) {
   return (
-    <section className={cn("ds-panel flex items-stretch gap-3 px-3 py-2.5", className)}>
-      <div className="flex shrink-0 flex-col justify-center">
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-3">
-          Needs you
-        </p>
-        <p className="font-mono text-[9px] text-ink-4">waiting on a person</p>
-      </div>
+    <section className={cn("ds-panel flex min-h-0 flex-col p-4", className)}>
+      <p className="ds-eyebrow shrink-0">Needs you</p>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="mt-3 grid shrink-0 grid-cols-3 gap-2">
         {COUNTS.map((c) => {
           const Icon = c.icon;
           const value = data[c.key];
@@ -48,39 +38,36 @@ export function NeedsYou({
             <Link
               key={c.key}
               href={c.href}
-              className="ds-well group flex items-center gap-2 px-2.5 py-1.5 transition-colors hover:border-line-strong"
+              className="ds-well group flex flex-col items-center px-2 py-2.5 transition-colors hover:border-line-strong"
             >
               <Icon className={cn("size-3.5", value > 0 ? c.tone : "text-ink-4")} />
-              <span className={cn("font-mono text-[15px] font-semibold tabular", value > 0 ? "text-ink" : "text-ink-3")}>
+              <span className={cn("ds-figure mt-1.5 text-xl", value > 0 ? "text-ink" : "text-ink-3")}>
                 {value}
               </span>
-              <span className="text-[9.5px] leading-tight text-ink-4">{c.label}</span>
+              <span className="mt-0.5 text-center text-[9px] leading-tight text-ink-4">{c.label}</span>
             </Link>
           );
         })}
       </div>
 
-      <span className="w-px shrink-0 bg-line" />
+      <div className="ds-rule my-3 shrink-0" />
 
       {data.items.length === 0 ? (
-        <p className="flex items-center text-[11px] text-ink-4">Nothing is waiting on a decision.</p>
+        <p className="text-[11px] text-ink-4">Nothing is waiting on a decision.</p>
       ) : (
-        /* The assistant dock is fixed to the bottom-right corner. Reserving the
-           space keeps it from sitting on top of the last queue item, which is
-           the one a person is most likely to be reaching for. */
-        <ul className="flex min-w-0 flex-1 items-stretch gap-2 overflow-x-auto pr-[168px]">
+        <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
           {data.items.map((item) => (
-            <li key={item.id} className="min-w-[220px] flex-1">
+            <li key={item.id}>
               <Link
                 href={item.href}
-                className="group flex h-full flex-col justify-center rounded-md border border-line bg-surface-2/40 px-2.5 py-1.5 transition-colors hover:border-brand/40"
+                className="group block rounded-md border border-line bg-surface-2/40 px-2.5 py-2 transition-colors hover:border-brand/40"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-start justify-between gap-2">
                   <SeverityBadge severity={item.severity} size="xs" showIcon={false} withTooltip={false} />
-                  <span className="truncate text-[11px] font-medium text-ink-2">{item.label}</span>
-                  <ArrowUpRight className="ml-auto size-3 shrink-0 text-ink-4 opacity-0 transition-opacity group-hover:opacity-100" />
+                  <ArrowUpRight className="size-3 shrink-0 text-ink-4 opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
-                <p className="mt-0.5 truncate text-[9.5px] text-ink-4">
+                <p className="mt-1.5 truncate text-[11px] font-medium text-ink-2">{item.label}</p>
+                <p className="mt-0.5 truncate text-[10px] text-ink-4">
                   {item.detail} · {formatRelative(item.at)}
                 </p>
               </Link>
