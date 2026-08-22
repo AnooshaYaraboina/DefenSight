@@ -4,7 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Check, ChevronRight, CircleDot, Crosshair, Loader2, Play, Siren, TriangleAlert, X, Zap,
+  Check,
+  ClipboardList, ChevronRight, CircleDot, Crosshair, Loader2, Play, Siren, TriangleAlert, X, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import { RiskPill } from "./risk-score";
 import { CodePanel } from "./evidence";
 import { formatDuration } from "@/lib/utils/format";
 import type { SimulatorScenario } from "@/lib/simulator/scenarios";
+import { SuiteReport, type SuiteRow } from "@/components/security/simulator-suite-report";
 import type { Decision, Severity, ThreatType } from "@/lib/engine/taxonomy";
 import type { RiskFactor, StageTrace } from "@/lib/engine/types";
 
@@ -78,6 +80,11 @@ export function SimulatorConsole({ scenarios }: { scenarios: SimulatorScenario[]
   const [results, setResults] = React.useState<Record<string, RunResult>>({});
   const [runningAll, setRunningAll] = React.useState(false);
   const [customPrompt, setCustomPrompt] = React.useState("");
+  /* Which half of the right column is showing. A suite run switches to the
+     report rather than flicking the detail panel through eight scenarios,
+     which showed each one for about a second and left nothing readable. */
+  const [view, setView] = React.useState<"scenario" | "suite">("scenario");
+  const [progress, setProgress] = React.useState<{ done: number; total: number } | null>(null);
   const [customOutput, setCustomOutput] = React.useState("");
 
   const scenario = scenarios.find((s) => s.key === selected)!;
@@ -119,9 +126,11 @@ export function SimulatorConsole({ scenarios }: { scenarios: SimulatorScenario[]
 
   async function runAll() {
     setRunningAll(true);
-    for (const s of scenarios) {
-      setSelected(s.key);
+    setView("suite");
+    setProgress({ done: 0, total: scenarios.length });
+    for (const [i, s] of scenarios.entries()) {
       await run(s.key);
+      setProgress({ done: i + 1, total: scenarios.length });
     }
     setRunningAll(false);
     router.refresh();
@@ -129,6 +138,35 @@ export function SimulatorConsole({ scenarios }: { scenarios: SimulatorScenario[]
 
   const completed = Object.values(results);
   const passedCount = completed.filter((r) => r.passed).length;
+
+  /* Flattened for the report. Inbound and outbound are read apart because a
+     scenario can recognise an attack in the prompt and never look at the reply,
+     and a single verdict hides which half did the work. */
+  const suiteRows: SuiteRow[] = scenarios
+    .map((s) => ({ s, r: results[s.key] }))
+    .filter((x): x is { s: SimulatorScenario; r: RunResult } => Boolean(x.r) && !x.r.custom)
+    .map(({ s, r }) => ({
+      key: s.key,
+      name: s.name,
+      category: s.category,
+      passed: r.passed,
+      inbound: Boolean(
+        r.grading?.threats.passed && r.grading.decision.passed && r.grading.risk.passed,
+      ),
+      outbound: r.grading?.outputControls ? r.grading.outputControls.passed : null,
+      decision: r.result.decision,
+      riskScore: r.result.riskScore,
+      durationMs: r.durationMs,
+      eventId: r.eventId,
+      incidentRef: r.incidentRef,
+      threatTypes: r.result.threatTypes,
+      layers: r.result.detections.map((d) => d.layer),
+      outboundControls: r.grading?.outputControls?.fired ?? [],
+      policies: r.result.policies.map((pol) => pol.name),
+      toolsRefused: r.result.toolDecisions.filter((t) => t.decision === "BLOCK").length,
+      documentsWithheld: r.result.withheldRetrievals.length,
+      redacted: r.result.redacted,
+    }));
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
@@ -160,6 +198,39 @@ export function SimulatorConsole({ scenarios }: { scenarios: SimulatorScenario[]
             <Zap />
             Run full test suite
           </Button>
+
+          {/* A suite run takes a few seconds per scenario. Without this the
+              button spins and nothing else moves, which reads as a hang. */}
+          {progress && (
+            <div className="mt-2.5">
+              <div className="h-1 overflow-hidden rounded-full bg-inset">
+                <div
+                  className="h-full rounded-full bg-brand transition-[width] duration-300"
+                  style={{ width: `${(progress.done / progress.total) * 100}%` }}
+                />
+              </div>
+              <p className="mt-1 font-mono text-[9.5px] text-ink-4">
+                {progress.done}/{progress.total} scenarios
+                {runningAll ? " — running" : " — complete"}
+              </p>
+            </div>
+          )}
+
+          {suiteRows.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setView("suite")}
+              className={cn(
+                "mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] transition-colors",
+                view === "suite"
+                  ? "border-brand/45 bg-brand-dim/35 text-brand-text"
+                  : "border-line bg-surface-2 text-ink-3 hover:border-line-strong hover:text-ink",
+              )}
+            >
+              <ClipboardList className="size-3" />
+              Suite report
+            </button>
+          )}
         </Card>
 
         <ul className="space-y-1.5">
@@ -170,7 +241,10 @@ export function SimulatorConsole({ scenarios }: { scenarios: SimulatorScenario[]
               <li key={s.key}>
                 <button
                   type="button"
-                  onClick={() => setSelected(s.key)}
+                  onClick={() => {
+                    setSelected(s.key);
+                    setView("scenario");
+                  }}
                   className={cn(
                     "w-full rounded-md border px-3 py-2.5 text-left transition-colors",
                     selected === s.key
@@ -200,7 +274,37 @@ export function SimulatorConsole({ scenarios }: { scenarios: SimulatorScenario[]
                     </span>
                     {r && <RiskPill score={r.result.riskScore} />}
                   </div>
-                  <p className="mt-1 truncate text-[10px] text-ink-4">{s.category}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <p className="truncate text-[10px] text-ink-4">{s.category}</p>
+                    {/* Which half of the pipeline this scenario proved. Graded
+                        apart because recognising an attack in the prompt says
+                        nothing about whether the reply was ever screened. */}
+                    {r && !r.custom && r.grading && (
+                      <span className="ml-auto flex shrink-0 items-center gap-1 font-mono text-[8.5px] uppercase tracking-wide">
+                        <span
+                          className={cn(
+                            r.grading.threats.passed && r.grading.decision.passed && r.grading.risk.passed
+                              ? "text-allow"
+                              : "text-critical",
+                          )}
+                        >
+                          in
+                        </span>
+                        <span className="text-ink-4">·</span>
+                        <span
+                          className={cn(
+                            !r.grading.outputControls
+                              ? "text-ink-4"
+                              : r.grading.outputControls.passed
+                                ? "text-allow"
+                                : "text-critical",
+                          )}
+                        >
+                          out
+                        </span>
+                      </span>
+                    )}
+                  </div>
                 </button>
               </li>
             );
@@ -210,6 +314,17 @@ export function SimulatorConsole({ scenarios }: { scenarios: SimulatorScenario[]
 
       {/* ------------------------------------------------------- detail */}
       <div className="min-w-0 space-y-4">
+        {view === "suite" ? (
+          <SuiteReport
+            rows={suiteRows}
+            scenarios={scenarios}
+            onOpen={(key) => {
+              setSelected(key);
+              setView("scenario");
+            }}
+          />
+        ) : (
+        <>
         <Card className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
@@ -364,6 +479,8 @@ export function SimulatorConsole({ scenarios }: { scenarios: SimulatorScenario[]
               </p>
             </div>
           </Card>
+        )}
+        </>
         )}
       </div>
     </div>
