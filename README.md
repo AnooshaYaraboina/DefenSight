@@ -118,6 +118,7 @@ the security.
 
 | | |
 |---|---|
+| [Capability Reference](docs/capabilities.md) | Every factor on screen: what it is, how it is derived, when to use it |
 | [Architecture](docs/architecture.md) | Components, data flows, trust boundaries |
 | [Threat Model](docs/threat-model.md) | 23 threats mapped to OWASP LLM Top 10 and MITRE ATLAS, with residual risk |
 | [Security Design](docs/security-design.md) | Detection, guardrails, risk, RAG, agent, tool, data, incident response |

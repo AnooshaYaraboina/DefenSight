@@ -2,6 +2,7 @@
 
 | Document | Deliverable | Contents |
 |---|---|---|
+| [capabilities.md](capabilities.md) | — | Every factor on screen: what it is, how it is derived, and when to use it |
 | [architecture.md](architecture.md) | §28.3 | Components, data flows, trust boundaries, pipeline stages |
 | [threat-model.md](threat-model.md) | §28.4 | Assets, actors, 23 threats mapped to OWASP LLM and MITRE ATLAS, residual risk |
 | [security-design.md](security-design.md) | §28.5 | Detection, guardrails, risk scoring, RAG, agent, tool authorization, data protection, incident response |
