@@ -27,8 +27,20 @@ import { fuseDetections, type FusedThreat } from "../detectors/fusion";
 import { redactSensitive } from "../sensitive";
 import { plural } from "../text";
 
-/** Which detection threat types each control type is responsible for. */
-const CONTROL_THREATS: Record<string, string[]> = {
+/**
+ * Which detection threat types each control type is responsible for.
+ *
+ * Exported because the Guardrails Center needs the same mapping to show how
+ * much traffic each control has been answering for. It was copied there once
+ * and the two drifted — the page grew PII and SECRETS entries the engine never
+ * had. One definition now, imported in both places.
+ *
+ * PII and SECRETS trigger from sensitive findings rather than detections (see
+ * CONTROL_CATEGORIES), so they contribute nothing here at evaluation time. They
+ * are listed because the page counts detection activity for them, and a control
+ * absent from this map would silently report zero.
+ */
+export const CONTROL_THREATS: Record<string, string[]> = {
   PROMPT_INJECTION: ["PROMPT_INJECTION", "INSTRUCTION_OVERRIDE", "ROLE_MANIPULATION"],
   INDIRECT_INJECTION: ["INDIRECT_PROMPT_INJECTION", "RAG_POISONING"],
   JAILBREAK: ["JAILBREAK"],
@@ -40,6 +52,8 @@ const CONTROL_THREATS: Record<string, string[]> = {
   UNSAFE_CONTENT: ["UNSAFE_OUTPUT"],
   CONFIDENTIAL_DATA: ["UNAUTHORIZED_DOCUMENT_ACCESS", "DATA_LEAKAGE"],
   UNAUTHORIZED_INFO: ["UNAUTHORIZED_ACCESS", "DATA_LEAKAGE"],
+  PII: ["DATA_LEAKAGE", "SENSITIVE_DATA_EXPOSURE"],
+  SECRETS: ["SECRET_EXPOSURE"],
 };
 
 /** Which sensitive categories each control type is responsible for. */

@@ -13,7 +13,7 @@ export { scanSensitive, redactSensitive, sensitivityWeight, SENSITIVE_PATTERNS }
 export { assessRisk, RISK_WEIGHTS } from "./risk";
 export { evaluatePolicies, evaluateCondition } from "./policy/engine";
 export { buildFacts, FACT_CATALOGUE } from "./policy/facts";
-export { evaluateGuardrails, applyRedaction, detectSystemPromptLeak } from "./guardrails";
+export { evaluateGuardrails, applyRedaction, detectSystemPromptLeak, CONTROL_THREATS } from "./guardrails";
 export { authorizeToolCalls, validateAgainstSchema } from "./toolgw";
 export { analyseAgentBehaviour } from "./agents/behavior";
 export { scanDocument } from "./rag/scanner";

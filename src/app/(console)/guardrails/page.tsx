@@ -1,6 +1,7 @@
 import { ArrowDownToLine, ArrowUpFromLine, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { getGuardrails } from "@/lib/queries/defense";
+import { CONTROL_THREATS } from "@/lib/engine";
 import { Card, CardContent } from "@/components/ui/card";
 import { MetricStrip } from "@/components/security/metric-strip";
 import { GuardrailCard, type GuardrailRow } from "@/components/security/guardrail-card";
@@ -9,22 +10,6 @@ import { SectionHeader } from "@/components/layout/page-header";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Guardrails" };
 
-/** Maps each control type to the threat types it is responsible for. */
-const CONTROL_THREATS: Record<string, string[]> = {
-  PROMPT_INJECTION: ["PROMPT_INJECTION", "INSTRUCTION_OVERRIDE", "ROLE_MANIPULATION"],
-  INDIRECT_INJECTION: ["INDIRECT_PROMPT_INJECTION", "RAG_POISONING"],
-  JAILBREAK: ["JAILBREAK"],
-  SYSTEM_PROMPT_EXTRACTION: ["SYSTEM_PROMPT_EXTRACTION"],
-  SYSTEM_PROMPT_LEAK: ["SYSTEM_PROMPT_EXTRACTION"],
-  ENCODED_PAYLOAD: ["ENCODED_PAYLOAD"],
-  MALICIOUS_INSTRUCTION: ["TOOL_ABUSE", "PROMPT_INJECTION"],
-  EXFILTRATION: ["DATA_EXFILTRATION"],
-  UNSAFE_CONTENT: ["UNSAFE_OUTPUT"],
-  CONFIDENTIAL_DATA: ["UNAUTHORIZED_DOCUMENT_ACCESS", "DATA_LEAKAGE"],
-  UNAUTHORIZED_INFO: ["UNAUTHORIZED_ACCESS", "DATA_LEAKAGE"],
-  PII: ["DATA_LEAKAGE", "SENSITIVE_DATA_EXPOSURE"],
-  SECRETS: ["SECRET_EXPOSURE"],
-};
 
 export default async function GuardrailsPage() {
   const { guardrails, detectionCounts } = await getGuardrails();

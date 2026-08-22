@@ -298,6 +298,9 @@ export async function persistAnalysis(options: PersistOptions): Promise<Persiste
     },
   });
 
+  /* --------------------------------------------------- control fire counts */
+  await recordControlHits(result, context.timestamp);
+
   /* ------------------------------------------------------------ baselines */
   await updateBaselines(context, result);
 
@@ -305,6 +308,39 @@ export async function persistAnalysis(options: PersistOptions): Promise<Persiste
   await refreshPostureScores(applicationId, agentId);
 
   return { eventId: created.id, eventRef, incidentId, incidentRef, alertIds };
+}
+
+/**
+ * Count the controls that actually acted on this request.
+ *
+ * Distinct from the detection counts the Guardrails Center already shows. A
+ * control can be in scope for twenty detections and have fired none of them,
+ * because every one sat below its threshold — that is the difference between
+ * "this control is watching something" and "this control is doing something",
+ * and it is the number that tells an administrator whether a threshold is set
+ * usefully.
+ *
+ * Only triggered controls are counted. Evaluating a guardrail and deciding not
+ * to act is not a hit.
+ */
+async function recordControlHits(result: AnalysisResult, at: Date) {
+  const guardrailKeys = result.guardrails.filter((g) => g.triggered).map((g) => g.key);
+  const policyIds = result.policies.filter((p) => p.matched).map((p) => p.policyId);
+
+  await Promise.all([
+    guardrailKeys.length
+      ? prisma.guardrail.updateMany({
+          where: { key: { in: guardrailKeys } },
+          data: { hitCount: { increment: 1 }, lastHitAt: at },
+        })
+      : null,
+    policyIds.length
+      ? prisma.policy.updateMany({
+          where: { id: { in: policyIds } },
+          data: { hitCount: { increment: 1 }, lastHitAt: at },
+        })
+      : null,
+  ]);
 }
 
 /** Roll the behavioural baselines forward with this request's observations. */

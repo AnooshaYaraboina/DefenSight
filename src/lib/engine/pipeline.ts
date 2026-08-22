@@ -37,6 +37,7 @@ import type {
   AnalysisContext,
   AnalysisResult,
   DetectionResult,
+  GuardrailEvaluation,
   SensitiveFinding,
   StageTrace,
   ToolDecision,
@@ -619,6 +620,11 @@ export function analyze(context: AnalysisContext): AnalysisResult {
   let redactedOutput: string | undefined;
   let outputRedacted = false;
   let outputDecision: Decision = "ALLOW";
+  /* Collected so the result carries both passes. The output evaluations used
+     to stay inside this block, which meant AnalysisResult.guardrails described
+     only half the controls — every output control looked as though it had
+     never been consulted. */
+  let outputGuardrailEvaluations: GuardrailEvaluation[] = [];
 
   if (context.output) {
     stage("RESPONSE", "Response Screened", () => {
@@ -635,6 +641,7 @@ export function analyze(context: AnalysisContext): AnalysisResult {
       });
 
       outputDecision = outputGuardrails.decision;
+      outputGuardrailEvaluations = outputGuardrails.evaluations;
 
       if (outputGuardrails.redactTypes.length > 0) {
         const applied = applyRedaction(context.output!, outputGuardrails.redactTypes);
@@ -706,7 +713,7 @@ export function analyze(context: AnalysisContext): AnalysisResult {
     sensitiveFindings,
     risk,
     policies: policyResult.evaluations,
-    guardrails: inputGuardrails.evaluations,
+    guardrails: [...inputGuardrails.evaluations, ...outputGuardrailEvaluations],
     toolDecisions,
     intent,
     withheldRetrievals,

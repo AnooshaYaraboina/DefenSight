@@ -181,8 +181,30 @@ export function GuardrailCard({
               </span>
             </Tooltip>
           )}
-          <span className="ml-auto font-mono text-[10px] text-ink-4">
-            {detections} detection{detections === 1 ? "" : "s"} in scope (7d)
+          {/* Two different numbers, and the gap between them is the point: a
+              control can be in scope for plenty and have acted on none of it,
+              which is what a threshold set too high looks like.
+
+              Both windows are stated because they differ. Scope is a trailing
+              seven days; the fire count runs from whenever the control was last
+              reset. Without the labels a control that has been busy for a
+              fortnight shows more actions than scope and reads as a bug. */}
+          <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] text-ink-4">
+            <Tooltip content="Detections this control is responsible for, over the last 7 days.">
+              <span>{detections} in scope · 7d</span>
+            </Tooltip>
+            <span aria-hidden="true">|</span>
+            <Tooltip
+              content={
+                guardrail.hitCount > 0
+                  ? "Requests this control has acted on, counted since it was last reset."
+                  : "This control has never acted on a request."
+              }
+            >
+              <span className={cn(guardrail.hitCount > 0 && "text-ink-3")}>
+                {guardrail.hitCount} acted · all time
+              </span>
+            </Tooltip>
           </span>
         </div>
       </div>
