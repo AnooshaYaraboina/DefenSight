@@ -711,12 +711,6 @@
   22%     { transform: translateX(-50%) scaleX(0.42); opacity: 0.2; }
   44%     { transform: translateX(-50%) scaleX(0.55); opacity: 0.3; }
 }
-@keyframes ds-sy-confetti {
-  0%   { transform: translateY(0) rotate(0deg);      opacity: 0; }
-  12%  { opacity: 1; }
-  100% { transform: translateY(150px) rotate(520deg); opacity: 0; }
-}
-
 /* ---- alarm ---- */
 @keyframes ds-sy-recoil {
   0%   { transform: translateX(0) rotate(0deg); }
@@ -824,11 +818,65 @@
   [data-sentry="alarm"] .ds-sy-aura  { animation: ds-sy-aura 0.85s var(--ease-out-soft) 4; }
 }
 
+/* Reduced motion calms Sentry; it does not switch him off.
+ *
+ * These rules used to be `animation: none !important` across the whole
+ * character. On a machine with Windows animations disabled — which reports
+ * prefers-reduced-motion: reduce — that left a still image, and every one of
+ * the nine states looked identical. A frozen character is indistinguishable
+ * from a broken one, and the states stop communicating anything at all.
+ *
+ * Slowing the clock and shrinking the travel keeps each posture readable while
+ * removing the motion that actually causes trouble. Only two things stop
+ * outright, below: the strobes and the confetti. */
 @media (prefers-reduced-motion: reduce) {
-  .ds-sy, .ds-sy *, .ds-sy-shadow, .ds-sy-mote, .ds-sy-spark, .ds-sy-confetti,
-  .ds-sy-caret, .ds-sy-ring, .ds-sy-beam, .ds-sy-shield, .ds-sy-gloss {
+  /* Strobes are the genuine problem here, not movement. ds-sy-flash runs on
+     steps(2, end) and reads as a hard blink; the caret does the same. */
+  .ds-sy-antenna-tip,
+  .ds-sy-caret {
     animation: none !important;
+    opacity: 1;
   }
+
+  /* Everything else keeps its own tempo and simply travels less. Redefining
+     the keyframes rather than overriding durations matters: the states are
+     choreographed against each other — a lagging forearm reads as an elbow
+     only because it runs at the same speed as the upper arm, delayed. Flatten
+     the durations and the articulation falls apart. */
+  @keyframes ds-sy-float   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+  @keyframes ds-sy-bounce  { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.8px); } }
+  @keyframes ds-sy-sway    { 0%, 100% { transform: rotate(-0.5deg); } 50% { transform: rotate(0.5deg); } }
+  @keyframes ds-sy-lean    { 0%, 100% { transform: rotate(1.4deg) translateY(0); } 50% { transform: rotate(2.1deg) translateY(-0.7px); } }
+  @keyframes ds-sy-ponder  { 0%, 100% { transform: rotate(-2.8deg); } 50% { transform: rotate(-4.2deg); } }
+  @keyframes ds-sy-antenna { 0%, 100% { transform: rotate(-1.7deg); } 50% { transform: rotate(1.7deg); } }
+
+  /* Limbs keep their gesture — the shape of the pose is what distinguishes
+     one state from another — at roughly a third of the swing. */
+  @keyframes ds-sy-pump-l  { 0%, 100% { transform: rotate(1deg); }   50% { transform: rotate(-21deg); } }
+  @keyframes ds-sy-pump-r  { 0%, 100% { transform: rotate(-1deg); }  50% { transform: rotate(21deg); } }
+  @keyframes ds-sy-march-l { 0%, 100% { transform: rotate(5deg); }   50% { transform: rotate(-5deg); } }
+  @keyframes ds-sy-march-r { 0%, 100% { transform: rotate(-5deg); }  50% { transform: rotate(5deg); } }
+  @keyframes ds-sy-cheer-l { 0%, 100% { transform: rotate(0deg); } 20%, 72% { transform: rotate(-52deg); } }
+  @keyframes ds-sy-cheer-r { 0%, 100% { transform: rotate(0deg); } 20%, 72% { transform: rotate(52deg); } }
+  @keyframes ds-sy-guard-l { 0%, 100% { transform: rotate(0deg); } 30%, 70% { transform: rotate(-24deg); } }
+  @keyframes ds-sy-guard-r { 0%, 100% { transform: rotate(0deg); } 30%, 70% { transform: rotate(24deg); } }
+
+  /* One-shots stay one-shots — a startle that does not move is not a startle. */
+  @keyframes ds-sy-recoil {
+    0%   { transform: translateX(0) rotate(0deg); }
+    35%  { transform: translateX(-4.5px) rotate(-1.6deg); }
+    70%  { transform: translateX(2px) rotate(0.8deg); }
+    100% { transform: translateX(0) rotate(0deg); }
+  }
+  @keyframes ds-sy-dance {
+    0%, 100% { transform: translateY(0) rotate(0deg) scaleY(1); }
+    22%      { transform: translateY(-9px) rotate(-3deg) scaleY(1.02); }
+    62%      { transform: translateY(-9px) rotate(3deg) scaleY(1.02); }
+  }
+
+  /* Rising particles are the one ambient effect with no pose to communicate. */
+  .ds-sy-mote,
+  .ds-sy-spark { animation: none !important; opacity: 0; }
 }
 
 @keyframes ds-sy-caret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
@@ -940,11 +988,12 @@
   [data-sentry="alarm"] .ds-sy-shield { animation: ds-sy-shield-up 1.7s var(--ease-out-soft) 1; }
 }
 
+/* The articulated parts keep running. The shield is a one-shot reveal and keeps
+   its timing too — stopping it would leave the alarm state with no visible
+   response at all, which is the failure this whole block exists to avoid. */
 @media (prefers-reduced-motion: reduce) {
-  .ds-sy-fore-l, .ds-sy-fore-r, .ds-sy-gloss,
-  .ds-sy-ring, .ds-sy-beam, .ds-sy-shield {
-    animation: none !important;
-  }
+  @keyframes ds-sy-fore-swing { 0%, 100% { transform: rotate(2deg); } 50% { transform: rotate(-16deg); } }
+  @keyframes ds-sy-fore-cheer { 0%, 100% { transform: rotate(0deg); } 20%, 72% { transform: rotate(-14deg); } }
 }
 
 /* ==========================================================================
@@ -971,9 +1020,9 @@
   [data-sentry="dancing"] .ds-sy-antenna { animation: ds-sy-antenna 0.9s var(--ease-out-soft) infinite; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  [data-sentry="dancing"] * { animation: none !important; }
-}
+/* Dancing used to be killed outright, which made the one state asked for by
+   name the only one that did nothing at all. It now runs the reduced
+   choreography above — a sway rather than a hop, still unmistakably dancing. */
 
 /* ==========================================================================
    Party poppers
@@ -1059,10 +1108,17 @@
   .ds-pop-piece { border-radius: 1px; animation: ds-pop-piece 1.9s linear both; }
 }
 
+/* Confetti is the one piece that genuinely should not run: sixteen pieces per
+   side on independent trajectories is exactly the motion this preference
+   exists to suppress. Hidden rather than frozen, or the pieces pile at the
+   muzzle. The celebration still reads through the hop and the core flash. */
 @media (prefers-reduced-motion: reduce) {
-  .ds-pop-mount, .ds-pop-flash, .ds-pop-x, .ds-pop-y, .ds-pop-piece {
+  .ds-pop-mount,
+  .ds-pop-flash,
+  .ds-pop-x,
+  .ds-pop-y,
+  .ds-pop-piece {
     animation: none !important;
   }
-  /* Frozen pieces would pile at the muzzle. */
   .ds-pop-x { display: none; }
 }
