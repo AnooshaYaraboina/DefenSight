@@ -31,6 +31,26 @@ export interface MapEdge {
   to: string;
 }
 
+export interface RecentRequest {
+  id: string;
+  ref: string;
+  at: Date;
+  user: string;
+  application: string;
+  agent: string | null;
+  /** The prompt as submitted, trimmed for the row. */
+  request: string;
+  decision: string;
+  severity: Severity;
+  riskScore: number;
+  blocked: boolean;
+  redacted: boolean;
+  threats: string[];
+  /** Label of the stage that stopped it, when one did. */
+  stoppedAt: string | null;
+  latencyMs: number;
+}
+
 export interface WarRoomData {
   org: string;
   posture: {
@@ -67,6 +87,16 @@ export interface WarRoomData {
       at: Date;
     }>;
   };
+  /**
+   * The last requests through the pipeline, with what was actually said.
+   *
+   * The wall used to show a threat label and a truncated target — "RAG
+   * Poisoning → Atlas Document Summar…" — which names a category without ever
+   * showing the thing itself. An analyst cannot judge a verdict they cannot
+   * read, so the prompt travels with the row, along with the stage that stopped
+   * it.
+   */
+  recentRequests: RecentRequest[];
   /** Seeds the intercept wire before the stream delivers anything. */
   recentIntercepts: Array<{
     id: string;
@@ -261,6 +291,48 @@ export async function getWarRoom(): Promise<WarRoomData> {
     })),
   ].slice(0, 3);
 
+  /* --------------------------------------------------- the flow, with text */
+  /* A separate read rather than widening the aggregate query above: that one
+     pulls every event in the window to compute posture, and carrying request
+     bodies and stage traces through it would multiply the payload for rows
+     nobody displays. */
+  const flowRows = await prisma.securityEvent.findMany({
+    take: 24,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true, ref: true, createdAt: true, requestText: true,
+      decision: true, severity: true, riskScore: true,
+      blocked: true, redacted: true, threatTypes: true,
+      latencyMs: true, stageTrace: true,
+      user: { select: { name: true } },
+      application: { select: { name: true } },
+      agent: { select: { name: true } },
+    },
+  });
+
+  const recentRequests: RecentRequest[] = flowRows.map((e) => {
+    const trace = jsonArray<{ label?: string; interventionPoint?: boolean }>(e.stageTrace);
+    const stopped = trace.find((t) => t.interventionPoint);
+    const threats = jsonArray<ThreatType>(e.threatTypes);
+    return {
+      id: e.id,
+      ref: e.ref,
+      at: e.createdAt,
+      user: e.user?.name ?? "Unattributed",
+      application: e.application?.name ?? "Unknown",
+      agent: e.agent?.name ?? null,
+      request: e.requestText.slice(0, 300),
+      decision: e.decision,
+      severity: e.severity as Severity,
+      riskScore: e.riskScore,
+      blocked: e.blocked,
+      redacted: e.redacted,
+      threats: threats.map((t) => THREAT_META[t]?.label ?? t),
+      stoppedAt: stopped?.label ?? null,
+      latencyMs: e.latencyMs,
+    };
+  });
+
   /* ------------------------------------------------------------- the wire */
   const recentIntercepts = events
     .filter((e) => e.blocked || e.severity === "CRITICAL" || e.severity === "HIGH")
@@ -293,6 +365,7 @@ export async function getWarRoom(): Promise<WarRoomData> {
       blockRate: events.length ? (blockedCount / events.length) * 100 : 0,
     },
     topology: { nodes, edges, agentsByName, toolNodeBySlug },
+    recentRequests,
     needsYou: {
       incidents: openIncidents.length,
       approvals: approvals.length,

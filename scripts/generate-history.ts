@@ -257,6 +257,9 @@ async function main() {
           applicationSlug: pattern.app,
           agentSlug: pattern.agent,
           input: pick(pattern.prompts),
+          // Benign requests carry a reply too, so the output guardrails run
+          // against real text rather than an empty string.
+          output: pattern.responses ? pick(pattern.responses) : undefined,
           retrievedDocumentIds,
           proposedToolCalls: pattern.tools?.map((t, index) => ({
             toolSlug: t.slug, operation: t.operation, arguments: t.args, index,

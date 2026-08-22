@@ -143,7 +143,7 @@ async function main() {
 
   console.log("\n  DefenSight detection benchmark");
   console.log(`  ${ATTACK_TRAFFIC.length} attack patterns · ` +
-    `${BENIGN_TRAFFIC.reduce((n, p) => n + p.prompts.length, 0)} benign prompts · ` +
+    `${BENIGN_TRAFFIC.reduce((n, p) => n + p.prompts.length, 0)} benign prompts, replies screened · ` +
     "production pipeline, nothing persisted");
   console.log(`  ambient: ${recent} event(s) in the trailing hour` +
     (recent > 100
@@ -190,6 +190,11 @@ async function main() {
         applicationSlug: pattern.app,
         agentSlug: pattern.agent,
         input: prompt,
+        /* The reply matters as much as the request. Benign traffic carries one
+           now, and screening it is half the pipeline — measuring only prompts
+           would leave the output guardrails unmeasured while reporting a
+           false-positive rate as though they had been. */
+        output: pattern.responses?.[benignRows.length % pattern.responses.length],
         retrievedDocumentIds,
         proposedToolCalls: pattern.tools?.map((t, index) => ({
           toolSlug: t.slug,

@@ -48,6 +48,8 @@ export interface LiveSecurityEvent {
   toolSlugs?: string[];
   retrievalCount: number;
   latencyMs: number;
+  /** Label of the pipeline stage that stopped this request, when one did. */
+  stoppedAt?: string;
   simulated: boolean;
   summary: string;
 }

@@ -84,6 +84,8 @@ async function emitOne(attackRate: number) {
       applicationSlug: pattern.app,
       agentSlug: pattern.agent,
       input: pick(pattern.prompts),
+      // A reply as well as a request, so the output stages screen real text.
+      output: pattern.responses ? pick(pattern.responses) : undefined,
       retrievedDocumentIds: documentIds,
       proposedToolCalls: pattern.tools?.map((t, index) => ({
         toolSlug: t.slug, operation: t.operation, arguments: t.args, index,

@@ -59,6 +59,11 @@ export async function ingest(request: IngestRequest): Promise<IngestResponse> {
       toolSlugs: result.toolDecisions.map((t) => t.toolSlug),
       retrievalCount: context.retrievals?.length ?? 0,
       latencyMs: result.latencyMs,
+      /* Where the request died, if it did. The wall lists live traffic and a
+         row that cannot say where it was stopped is the one thing an analyst
+         wants from a blocked request at a glance; without this the label only
+         ever appeared on server-rendered rows, which is almost none of them. */
+      stoppedAt: result.stageTrace.find((s) => s.interventionPoint)?.label,
       simulated: Boolean(context.simulated),
       summary: result.summary,
     });
