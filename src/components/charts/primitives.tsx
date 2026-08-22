@@ -199,9 +199,13 @@ export function GridLines({
 }) {
   return (
     <g aria-hidden="true">
-      {ticks.map((t) => (
+      {/* Keyed by index, not by the pixel value. On a chart with a small
+          domain two distinct ticks can round to the same y, and keying by
+          that collides -- React then drops one of the lines. The list is
+          positional and never reorders, so the index is the stable key. */}
+      {ticks.map((t, i) => (
         <line
-          key={t}
+          key={i}
           x1={padLeft}
           x2={width}
           y1={t}

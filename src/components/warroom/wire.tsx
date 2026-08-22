@@ -47,7 +47,14 @@ export function Wire({
       severity: e.severity,
     }));
 
-  const items = [...fromLive, ...seed].slice(0, 6);
+  /* A live event can also be sitting in the server-rendered seed: the bus
+     replays recent traffic and the seed was queried from those same rows.
+     Concatenating blind repeats the id, which collides as a React key and
+     makes the wire silently drop a line. Live wins -- it is the fresher copy
+     of the same row. */
+  const items = [...fromLive, ...seed]
+    .filter((item, i, all) => all.findIndex((other) => other.id === item.id) === i)
+    .slice(0, 6);
   const latest = items[0];
 
   return (

@@ -84,11 +84,20 @@
      read as text and borders, chart series must additionally clear
      colour-vision-deficiency separation and contrast against the panel
      surface (#101018). Re-run before changing any value:
-       node validate_palette.js "<hex,...>" --mode dark --surface "#101018"
+       node validate_palette.mjs "<hex,...>" "#101018"
      ------------------------------------------------------------------ */
 
-  /* Two-series time trend: total vs critical. ALL PASS, worst pair ΔE 24.2. */
-  --color-viz-primary: #8b5cf6;
+  /* Two-series time trend: total vs critical. The primary followed the brand
+     off electric violet, so it moved with it rather than being left as the
+     one violet thing on a blue console.
+
+     Re-measured with the checker in the repo root (CIEDE2000, Viénot
+     dichromat simulation): contrast 4.82:1 on the panel, worst CVD pair ΔE
+     38.6 under protanopia. Both better than the violet they replace (4.47:1,
+     ΔE 35.3). The block's earlier "ΔE 24.2" came from a tool that is not in
+     the repo and could not be reproduced; the figures above are stated with
+     the metric named so the next change can be compared like for like. */
+  --color-viz-primary: #1c7ff0;
   --color-viz-critical: #f43f5e;
 
   /* Ordinal severity/risk ramp, low → critical. One hue, monotone lightness —
