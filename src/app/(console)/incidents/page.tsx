@@ -9,6 +9,7 @@ import { IncidentStatusBadge, SeverityBadge, ThreatBadge } from "@/components/se
 import { AttackChainStrip } from "@/components/security/attack-chain";
 import { MetricStrip } from "@/components/security/metric-strip";
 import { StatusFilter } from "@/components/security/status-filter";
+import { ReportActions } from "@/components/security/report-actions";
 import { formatRelative } from "@/lib/utils/format";
 import { INCIDENT_STATUSES, INCIDENT_STATUS_META } from "@/lib/engine/taxonomy";
 
@@ -33,6 +34,13 @@ export default async function IncidentsPage({
       <PageHeader
         title="Incidents"
         description="Critical threats open a case automatically, seeded with the attack chain the pipeline recorded. Investigate, contain, resolve."
+        actions={
+          <ReportActions
+            endpoint="/api/reports/estate"
+            filename="defensight-incident-review.pdf"
+            label="consolidated review"
+          />
+        }
       />
 
       <MetricStrip

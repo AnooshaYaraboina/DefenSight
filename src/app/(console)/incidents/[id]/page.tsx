@@ -15,6 +15,7 @@ import { AttackChain } from "@/components/security/attack-chain";
 import { DetectionList } from "@/components/security/detection-list";
 import { ToolCallList } from "@/components/security/tool-call-list";
 import { IncidentActions } from "@/components/security/incident-actions";
+import { ReportActions } from "@/components/security/report-actions";
 import { RiskPill } from "@/components/security/risk-score";
 import { KeyValue } from "@/components/security/evidence";
 import { formatDateTime, formatRelative } from "@/lib/utils/format";
@@ -98,12 +99,19 @@ export default async function IncidentDetailPage({
         title={incident.title}
         description={`Opened ${formatRelative(incident.openedAt)}${incident.assignedTo ? ` · assigned to ${incident.assignedTo.name}` : " · unassigned"}`}
         actions={
-          <IncidentActions
-            incidentId={incident.id}
-            status={incident.status}
-            analysts={analysts}
-            assignedToId={incident.assignedToId}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <ReportActions
+              endpoint={`/api/reports/incident/${incident.id}`}
+              filename={`${incident.ref}-report.pdf`}
+              label="incident report"
+            />
+            <IncidentActions
+              incidentId={incident.id}
+              status={incident.status}
+              analysts={analysts}
+              assignedToId={incident.assignedToId}
+            />
+          </div>
         }
       />
 
