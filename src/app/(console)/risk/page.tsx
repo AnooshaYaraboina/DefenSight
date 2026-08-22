@@ -150,7 +150,7 @@ export default async function RiskPage() {
                     return (
                       <tr key={key}>
                         <td className="py-2.5 pr-3">
-                          <span className="font-mono text-[11px] text-brand">{key}</span>
+                          <span className="font-mono text-[11px] text-brand-text">{key}</span>
                         </td>
                         <td className="max-w-md py-2.5 pr-3 text-[11px] leading-relaxed text-ink-3">
                           {FACTOR_DESCRIPTIONS[key]}

@@ -283,7 +283,7 @@ export default async function AnalyticsPage({
                 <li key={t.type}>
                   <Link
                     href={`/monitor?threat=${t.type}`}
-                    className="inline-flex items-center gap-2 rounded-md border border-line bg-surface-2 px-2.5 py-1 text-[11px] text-ink-2 transition-colors hover:border-brand/40 hover:text-brand"
+                    className="inline-flex items-center gap-2 rounded-md border border-line bg-surface-2 px-2.5 py-1 text-[11px] text-ink-2 transition-colors hover:border-brand/40 hover:text-brand-text"
                   >
                     {t.label}
                     <span className="font-mono tabular text-ink-4">{t.count}</span>

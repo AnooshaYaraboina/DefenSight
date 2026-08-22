@@ -166,7 +166,7 @@ export default async function AgentsPage() {
                     key={`${a.id}-${f.resource}`}
                     className="flex flex-wrap items-center gap-3 rounded-md border border-medium/25 bg-medium-dim/20 px-3 py-2.5"
                   >
-                    <Link href={`/agents/${a.slug}`} className="text-[11px] font-medium text-ink-2 hover:text-brand">
+                    <Link href={`/agents/${a.slug}`} className="text-[11px] font-medium text-ink-2 hover:text-brand-text">
                       {a.name}
                     </Link>
                     <code className="rounded bg-inset px-1.5 py-0.5 font-mono text-[10px] text-ink-2">

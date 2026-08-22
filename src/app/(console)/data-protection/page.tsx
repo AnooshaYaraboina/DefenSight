@@ -125,7 +125,7 @@ export default async function DataProtectionPage() {
               Values are shown masked. The raw value never leaves the scanner.
             </p>
           </div>
-          <Link href="/monitor" className="text-[11px] text-brand hover:underline">
+          <Link href="/monitor" className="text-[11px] text-brand-text hover:underline">
             Open monitor
           </Link>
         </CardHeader>

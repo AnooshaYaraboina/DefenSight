@@ -168,7 +168,7 @@ export function AuditTable({
 
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
-                    <code className="font-mono text-[10px] text-brand">{log.action}</code>
+                    <code className="font-mono text-[10px] text-brand-text">{log.action}</code>
                     <Badge tone={(CATEGORY_TONE[log.category] ?? "neutral") as never} size="xs">
                       {log.category.toLowerCase().replace(/_/g, " ")}
                     </Badge>

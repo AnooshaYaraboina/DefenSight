@@ -216,7 +216,7 @@ export default async function DetectionsPage() {
               The strongest findings from the last 7 days.
             </p>
           </div>
-          <Link href="/monitor" className="text-[11px] text-brand hover:underline">
+          <Link href="/monitor" className="text-[11px] text-brand-text hover:underline">
             Open monitor
           </Link>
         </CardHeader>

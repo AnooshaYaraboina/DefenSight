@@ -133,7 +133,7 @@ export function EventTable({
             <button
               type="button"
               onClick={() => router.refresh()}
-              className="flex items-center gap-1.5 rounded-md border border-brand/30 bg-brand-dim/40 px-2 py-1 text-[11px] text-brand transition-colors hover:bg-brand-dim/60"
+              className="flex items-center gap-1.5 rounded-md border border-brand/30 bg-brand-dim/40 px-2 py-1 text-[11px] text-brand-text transition-colors hover:bg-brand-dim/60"
             >
               <Radio className="size-3 animate-pulse" />
               {liveCount} new — refresh

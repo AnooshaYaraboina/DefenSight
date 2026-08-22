@@ -138,7 +138,7 @@ export function Topbar({
                 type="button"
                 className="flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-surface-2"
               >
-                <span className="flex size-7 items-center justify-center rounded-full border border-brand/30 bg-brand-dim/50 font-mono text-[10px] font-semibold text-brand">
+                <span className="flex size-7 items-center justify-center rounded-full border border-brand/30 bg-brand-dim/50 font-mono text-[10px] font-semibold text-brand-text">
                   {initials(user.name)}
                 </span>
                 <span className="hidden text-left sm:block">

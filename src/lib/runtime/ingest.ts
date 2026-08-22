@@ -56,6 +56,7 @@ export async function ingest(request: IngestRequest): Promise<IngestResponse> {
       redacted: result.redacted,
       detectionCount: result.detections.length,
       toolCallCount: result.toolDecisions.length,
+      toolSlugs: result.toolDecisions.map((t) => t.toolSlug),
       retrievalCount: context.retrievals?.length ?? 0,
       latencyMs: result.latencyMs,
       simulated: Boolean(context.simulated),

@@ -22,7 +22,7 @@ import { normalize } from "../normalize";
 import { scanSensitive } from "../sensitive";
 import { scanFamilies } from "../detectors/lexical";
 import { validateAgainstSchema } from "./schema";
-import { plural } from "../text";
+import { plural, verb } from "../text";
 
 export interface GatewayInput {
   agent: AgentContext;
@@ -222,7 +222,7 @@ export function authorizeToolCalls(input: GatewayInput): GatewayResult {
       passed: violations.length === 0,
       detail: violations.length === 0
         ? "All arguments conform to the tool's declared parameter schema."
-        : `${violations.length} schema violation(s): ${violations.map((v) => `${v.path} ${v.message}`).join("; ")}.`,
+        : `${plural(violations.length, "schema violation")}: ${violations.map((v) => `${v.path} ${v.message}`).join("; ")}.`,
       severity: "HIGH",
     });
     if (violations.length > 0) threatTypes.add("TOOL_ABUSE");
@@ -308,7 +308,7 @@ export function authorizeToolCalls(input: GatewayInput): GatewayResult {
           ? `All ${plural(destinations.length, "destination")} are on ${tool.name}'s allowlist.`
           : allowed.length === 0
             ? `${tool.name} has no egress allowlist configured, so outbound destinations (${blockedDestinations.slice(0, 3).join(", ")}) cannot be permitted.`
-            : `Destination(s) ${blockedDestinations.slice(0, 3).join(", ")} are not on ${tool.name}'s allowlist (${allowed.join(", ")}).`,
+            : `${blockedDestinations.length === 1 ? "Destination" : "Destinations"} ${blockedDestinations.slice(0, 3).join(", ")} ${verb(blockedDestinations.length, "is", "are")} not on ${tool.name}'s allowlist (${allowed.join(", ")}).`,
         severity: "CRITICAL",
       });
       if (blockedDestinations.length > 0) {
@@ -338,7 +338,7 @@ export function authorizeToolCalls(input: GatewayInput): GatewayResult {
       label: "Within the grant's per-request cap",
       passed: withinGrantCap,
       detail: withinGrantCap
-        ? `${perToolCount[call.toolSlug]} of ${grantCap} permitted call(s) to ${tool.name} in this request.`
+        ? `${perToolCount[call.toolSlug]} of ${plural(grantCap, "permitted call")} to ${tool.name} in this request.`
         : `${perToolCount[call.toolSlug]} calls to ${tool.name} exceed the grant's cap of ${grantCap} per request.`,
       severity: "MEDIUM",
     });
