@@ -93,10 +93,26 @@ export async function POST(request: Request) {
     const decisionMet = scenario.expected.decisions.includes(result.decision);
     const riskMet = result.riskScore >= scenario.expected.minRisk;
 
+    /* Outbound side. The inbound checks above say the request was recognised;
+       these say the reply was screened before it could be delivered. Both
+       matter independently — a control that only works when the input gives
+       it away has not been tested. */
+    const expectedControls = scenario.expected.outputControls ?? [];
+    const firedControls = result.guardrails
+      .filter((g) => g.triggered && g.direction === "OUTPUT")
+      .map((g) => g.key);
+    const controlsMet = expectedControls.filter((k) => firedControls.includes(k));
+    const controlsPassed = expectedControls.length === 0 || controlsMet.length > 0;
+
+    const redactionExpected = scenario.expected.redacted === true;
+    const redactionPassed = !redactionExpected || result.redacted;
+
     /* The expectation describes the scenario's own text. Grading someone else's
        wording against it would report a failure for a prompt that never claimed
        to be that attack, so a custom run is reported rather than marked. */
-    const passed = custom ? null : threatsMet.length > 0 && decisionMet && riskMet;
+    const passed = custom
+      ? null
+      : threatsMet.length > 0 && decisionMet && riskMet && controlsPassed && redactionPassed;
 
     return NextResponse.json({
       scenarioKey: scenario.key,
@@ -124,6 +140,17 @@ export async function POST(request: Request) {
           actual: result.riskScore,
           passed: riskMet,
         },
+        outputControls: expectedControls.length
+          ? {
+              expected: expectedControls,
+              fired: firedControls,
+              met: controlsMet,
+              passed: controlsPassed,
+            }
+          : null,
+        redaction: redactionExpected
+          ? { expected: true, actual: result.redacted, passed: redactionPassed }
+          : null,
       },
       result: {
         decision: result.decision,

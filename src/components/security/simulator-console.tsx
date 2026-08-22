@@ -36,6 +36,13 @@ interface RunResult {
     threats: { expected: string[]; detected: string[]; met: string[]; passed: boolean };
     decision: { expected: string[]; actual: string; passed: boolean };
     risk: { minimum: number; actual: number; passed: boolean };
+    outputControls: {
+      expected: string[];
+      fired: string[];
+      met: string[];
+      passed: boolean;
+    } | null;
+    redaction: { expected: boolean; actual: boolean; passed: boolean } | null;
   } | null;
   result: {
     decision: Decision;
@@ -506,6 +513,33 @@ function ResultPanel({ result }: { result: RunResult }) {
             expected={`at least ${result.grading.risk.minimum}`}
             actual={String(result.grading.risk.actual)}
           />
+          {/* The three rows above say the request was recognised. These say the
+              reply was screened before it could be delivered — a control that
+              only works when the input gives it away has not been tested. */}
+          {result.grading.outputControls && (
+            <GradeRow
+              label="Outbound controls"
+              passed={result.grading.outputControls.passed}
+              expected={result.grading.outputControls.expected
+                .map((k) => k.replace(/^output\./, "").replace(/-/g, " "))
+                .join(", ")}
+              actual={
+                result.grading.outputControls.fired.length
+                  ? result.grading.outputControls.fired
+                      .map((k) => k.replace(/^output\./, "").replace(/-/g, " "))
+                      .join(", ")
+                  : "none acted"
+              }
+            />
+          )}
+          {result.grading.redaction && (
+            <GradeRow
+              label="Reply masked"
+              passed={result.grading.redaction.passed}
+              expected="redacted before delivery"
+              actual={result.grading.redaction.actual ? "redacted" : "delivered unmasked"}
+            />
+          )}
         </ul>
       </Card>
       )}
