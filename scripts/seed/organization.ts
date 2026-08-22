@@ -13,6 +13,20 @@ import { hashPassword } from "@/lib/rbac/password";
 
 export const DEMO_PASSWORD = "DefenSight!2026";
 
+/**
+ * The account the login screen offers for each role.
+ *
+ * Kept here beside the seed data so the addresses in the README, the seeded
+ * rows and the sign-in screen cannot drift apart. The login page used to pick
+ * whichever user sorted first alphabetically within a role, which quietly
+ * surfaced a different viewer than the one the documentation named.
+ */
+export const DEMO_ACCOUNTS: Record<string, string> = {
+  SECURITY_ADMIN: "admin@defensight.example",
+  SECURITY_ANALYST: "analyst@defensight.example",
+  VIEWER: "viewer@defensight.example",
+};
+
 export async function seedOrganization(prisma: PrismaClient) {
   /* ---------------------------------------------------------------- models */
   const modelSpecs = [
@@ -31,10 +45,10 @@ export async function seedOrganization(prisma: PrismaClient) {
   /* ----------------------------------------------------------------- users */
   const pw = await hashPassword(DEMO_PASSWORD);
   const userSpecs = [
-    { name: "Priya Raghunathan", email: "priya.r@northwind.example", role: "SECURITY_ADMIN", department: "Security Operations", clearance: "RESTRICTED", riskScore: 4 },
-    { name: "Marcus Adeyemi", email: "marcus.a@northwind.example", role: "SECURITY_ANALYST", department: "Security Operations", clearance: "CONFIDENTIAL", riskScore: 6 },
+    { name: "Admin", email: "admin@defensight.example", role: "SECURITY_ADMIN", department: "Security Operations", clearance: "RESTRICTED", riskScore: 4 },
+    { name: "Analyst", email: "analyst@defensight.example", role: "SECURITY_ANALYST", department: "Security Operations", clearance: "CONFIDENTIAL", riskScore: 6 },
     { name: "Sofia Bergström", email: "sofia.b@northwind.example", role: "SECURITY_ANALYST", department: "Security Operations", clearance: "CONFIDENTIAL", riskScore: 5 },
-    { name: "Daniel Okoro", email: "daniel.o@northwind.example", role: "VIEWER", department: "Risk & Compliance", clearance: "INTERNAL", riskScore: 8 },
+    { name: "Viewer", email: "viewer@defensight.example", role: "VIEWER", department: "Risk & Compliance", clearance: "INTERNAL", riskScore: 8 },
     { name: "Hannah Whitfield", email: "hannah.w@northwind.example", role: "VIEWER", department: "Finance", clearance: "CONFIDENTIAL", riskScore: 22 },
     { name: "Tomás Lindqvist", email: "tomas.l@northwind.example", role: "VIEWER", department: "Engineering", clearance: "INTERNAL", riskScore: 34 },
     { name: "Aisha Kamara", email: "aisha.k@northwind.example", role: "VIEWER", department: "People Operations", clearance: "CONFIDENTIAL", riskScore: 11 },
@@ -68,8 +82,8 @@ export async function seedOrganization(prisma: PrismaClient) {
       name: "Atlas Assistant",
       description:
         "Company-wide AI assistant. Answers employee questions over internal documentation, searches confidential files via RAG and delegates work to specialist agents.",
-      owner: "Priya Raghunathan",
-      ownerEmail: "priya.r@northwind.example",
+      owner: "Admin",
+      ownerEmail: "admin@defensight.example",
       model: "gpt-4o",
       securityScore: 72,
       systemPrompt:

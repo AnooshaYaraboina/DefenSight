@@ -35,9 +35,9 @@ Open **http://localhost:3000** and sign in.
 
 | Role | Account | Password |
 |---|---|---|
-| Security Administrator | `priya.r@northwind.example` | `DefenSight!2026` |
-| Security Analyst | `marcus.a@northwind.example` | `DefenSight!2026` |
-| Viewer | `daniel.o@northwind.example` | `DefenSight!2026` |
+| Security Administrator | `admin@defensight.example` | `DefenSight!2026` |
+| Security Analyst | `analyst@defensight.example` | `DefenSight!2026` |
+| Viewer | `viewer@defensight.example` | `DefenSight!2026` |
 
 Each role sees a different console. Sign in as the viewer to watch controls
 disappear.

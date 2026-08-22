@@ -2,9 +2,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession, pruneExpiredSessions } from "@/lib/rbac/auth";
 import { LoginForm } from "@/components/layout/login-form";
-import { Logo, Wordmark } from "@/components/layout/logo";
+import { LogoLockup } from "@/components/layout/logo";
 import { ROLE_META, type Role } from "@/lib/engine/taxonomy";
-import { DEMO_PASSWORD } from "../../../scripts/seed/organization";
+import { DEMO_PASSWORD, DEMO_ACCOUNTS } from "../../../scripts/seed/organization";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign in" };
@@ -19,17 +19,21 @@ export default async function LoginPage() {
   // is visible and permitted rather than only reading about it.
   const accounts = await Promise.all(
     (["SECURITY_ADMIN", "SECURITY_ANALYST", "VIEWER"] as Role[]).map(async (role) => {
-      const user = await prisma.user.findFirst({
-        where: { role },
-        select: { name: true, email: true, department: true, clearance: true },
-        orderBy: { name: "asc" },
-      });
+      const select = { name: true, email: true, department: true, clearance: true };
+      // Prefer the documented address for the role; fall back to any user with
+      // that role so the screen still works against a differently seeded db.
+      const user =
+        (await prisma.user.findFirst({
+          where: { role, email: DEMO_ACCOUNTS[role] },
+          select,
+        })) ??
+        (await prisma.user.findFirst({ where: { role }, select, orderBy: { name: "asc" } }));
       return user ? { ...user, role } : null;
     }),
   );
 
   return (
-    <div className="ds-noise relative flex min-h-dvh items-center justify-center overflow-hidden bg-base px-5 py-10">
+    <div className="ds-noise relative flex min-h-dvh items-center justify-center overflow-hidden bg-base px-5 py-8">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0">
         <div className="ds-grid-bg absolute inset-0 opacity-40" />
         <div
@@ -42,14 +46,24 @@ export default async function LoginPage() {
         />
       </div>
 
-      <div className="relative z-10 w-full max-w-sm">
-        <div className="mb-7 flex flex-col items-center text-center">
-          <Logo size={34} />
-          <Wordmark className="mt-3 text-xl" />
-          <p className="mt-2 text-xs text-ink-3">AI Security Defense &amp; Monitoring</p>
+      <div className="relative z-10 w-full max-w-[24rem]">
+        <div className="mb-6 flex flex-col items-center text-center">
+          {/* The full lockup rather than mark-plus-text: it already carries the
+              wordmark and the tagline, and at this size the faceted D reads. */}
+          <LogoLockup size={92} />
         </div>
 
-        <div className="ds-glass rounded-panel p-6">
+        {/* A lit top edge on the card, so the panel reads as a surface catching
+            light rather than a box drawn on the page. */}
+        <div className="ds-glass relative overflow-hidden rounded-panel p-6">
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-0 top-0 h-px"
+            style={{
+              background:
+                "linear-gradient(to right, transparent, color-mix(in oklab, var(--color-brand) 70%, transparent), transparent)",
+            }}
+          />
           <LoginForm
             accounts={accounts.filter((a): a is NonNullable<typeof a> => a !== null).map((a) => ({
               ...a,
@@ -59,11 +73,6 @@ export default async function LoginPage() {
             demoPassword={DEMO_PASSWORD}
           />
         </div>
-
-        <p className="mt-5 text-center text-[10px] leading-relaxed text-ink-4">
-          Sessions are signed and server-side revocable. Every sign-in, failed attempt and
-          sign-out is written to the audit log.
-        </p>
       </div>
     </div>
   );

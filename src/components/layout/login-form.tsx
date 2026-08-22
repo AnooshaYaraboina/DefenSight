@@ -2,12 +2,11 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, KeyRound, ShieldCheck, TriangleAlert } from "lucide-react";
+import { ArrowRight, KeyRound, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 
 export interface DemoAccount {
   name: string;
@@ -22,10 +21,12 @@ export interface DemoAccount {
 /**
  * Sign-in form.
  *
- * Lists one account per role. This is a demonstration deployment, and the
- * three-role requirement is only meaningful if a reviewer can actually sign in
- * as each and watch the console change — a permission matrix nobody can
- * exercise proves nothing.
+ * The three demonstration roles are a row of buttons under the form. Earlier
+ * passes listed them as full cards, then as a disclosure holding credential
+ * pairs; both pushed the card past the viewport and made the sign-in screen
+ * scroll. Switching role is the only thing a reviewer needs here, so the
+ * control is three targets and nothing else — the address for each is on the
+ * button's title, and the field shows it once selected.
  */
 export function LoginForm({
   accounts,
@@ -66,6 +67,52 @@ export function LoginForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
+      {/* --------------------------------------------------- role switcher */}
+      <div className="border-b border-line pb-4">
+        <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-4">
+          <KeyRound className="size-3" />
+          Sign in as
+        </p>
+
+        {/* One button per role, above the fields. Picking a role is the first
+            thing a reviewer does here, so it leads rather than trailing the
+            form, and the fields below visibly update to match the choice. */}
+        <div className="grid grid-cols-3 gap-1.5">
+          {accounts.map((account) => {
+            const active = email === account.email;
+            const short = account.roleLabel.replace("Security ", "");
+            return (
+              <button
+                key={account.email}
+                type="button"
+                aria-pressed={active}
+                title={`${account.email} · ${account.roleDescription}`}
+                onClick={() => {
+                  setEmail(account.email);
+                  setPassword(demoPassword);
+                  setError(null);
+                }}
+                className={cn(
+                  "rounded-md border px-2 py-2 text-center transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60",
+                  active
+                    ? "border-brand/50 bg-brand-dim/40 text-brand"
+                    : "border-line bg-surface/60 text-ink-3 hover:border-line-strong hover:bg-surface-2 hover:text-ink",
+                )}
+              >
+                <span className="block text-[11px] font-medium">{short}</span>
+                <span
+                  className={cn(
+                    "mt-1 block h-px w-full transition-colors",
+                    active ? "bg-brand/60" : "bg-transparent",
+                  )}
+                />
+              </button>
+            );
+          })}
+        </div>
+
+      </div>
       <div>
         <Label htmlFor="email">Email</Label>
         <Input
@@ -93,7 +140,10 @@ export function LoginForm({
       </div>
 
       {error && (
-        <p className="flex items-start gap-2 rounded-md border border-critical/30 bg-critical-dim/30 px-3 py-2 text-[11px] leading-relaxed text-critical">
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-md border border-critical/30 bg-critical-dim/30 px-3 py-2 text-[11px] leading-relaxed text-critical"
+        >
           <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
           {error}
         </p>
@@ -104,54 +154,7 @@ export function LoginForm({
         <ArrowRight />
       </Button>
 
-      <div className="border-t border-line pt-4">
-        <p className="mb-2.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-4">
-          <KeyRound className="size-3" />
-          Sign in as
-        </p>
-        <ul className="space-y-1.5">
-          {accounts.map((account) => (
-            <li key={account.email}>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail(account.email);
-                  setPassword(demoPassword);
-                  setError(null);
-                }}
-                className={cn(
-                  "w-full rounded-md border px-2.5 py-2 text-left transition-colors",
-                  email === account.email
-                    ? "border-brand/40 bg-brand-dim/30"
-                    : "border-line bg-surface/60 hover:border-line-strong hover:bg-surface-2",
-                )}
-              >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="truncate text-[11px] font-medium text-ink-2">
-                    {account.name}
-                  </span>
-                  <Badge
-                    tone={
-                      account.role === "SECURITY_ADMIN" ? "brand"
-                        : account.role === "SECURITY_ANALYST" ? "low" : "neutral"
-                    }
-                    size="xs"
-                  >
-                    {account.roleLabel.replace("Security ", "")}
-                  </Badge>
-                </span>
-                <span className="mt-0.5 block truncate text-[10px] leading-snug text-ink-4">
-                  {account.roleDescription}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2.5 flex items-center gap-1.5 text-[10px] text-ink-4">
-          <ShieldCheck className="size-3 text-brand" />
-          Each role sees a different console. Try the viewer to watch controls disappear.
-        </p>
-      </div>
     </form>
   );
 }
+

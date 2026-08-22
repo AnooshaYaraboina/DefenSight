@@ -103,20 +103,20 @@ async function main() {
   console.log(`${storeLinks.length} links`);
 
   step("seeding audit trail");
-  const admin = org.users["priya.r@northwind.example"];
+  const admin = org.users["admin@defensight.example"];
   await prisma.auditLog.createMany({
     data: [
-      { actorId: admin, actorName: "Priya Raghunathan", actorRole: "SECURITY_ADMIN", action: "platform.initialise", category: "ADMIN", description: "DefenSight deployed and connected to the Northwind AI estate.", outcome: "SUCCESS" },
-      { actorId: admin, actorName: "Priya Raghunathan", actorRole: "SECURITY_ADMIN", action: "guardrail.enable_all", category: "CONFIG", description: `Enabled ${controls.guardrailCount} default guardrails across input and output channels.`, outcome: "SUCCESS" },
-      { actorId: admin, actorName: "Priya Raghunathan", actorRole: "SECURITY_ADMIN", action: "policy.import_baseline", category: "CONFIG", description: `Imported ${controls.policyCount} baseline security policies.`, outcome: "SUCCESS" },
-      { actorId: admin, actorName: "Priya Raghunathan", actorRole: "SECURITY_ADMIN", action: "application.register", category: "CONFIG", description: "Registered 6 AI applications for monitoring.", outcome: "SUCCESS" },
+      { actorId: admin, actorName: "Admin", actorRole: "SECURITY_ADMIN", action: "platform.initialise", category: "ADMIN", description: "DefenSight deployed and connected to the Northwind AI estate.", outcome: "SUCCESS" },
+      { actorId: admin, actorName: "Admin", actorRole: "SECURITY_ADMIN", action: "guardrail.enable_all", category: "CONFIG", description: `Enabled ${controls.guardrailCount} default guardrails across input and output channels.`, outcome: "SUCCESS" },
+      { actorId: admin, actorName: "Admin", actorRole: "SECURITY_ADMIN", action: "policy.import_baseline", category: "CONFIG", description: `Imported ${controls.policyCount} baseline security policies.`, outcome: "SUCCESS" },
+      { actorId: admin, actorName: "Admin", actorRole: "SECURITY_ADMIN", action: "application.register", category: "CONFIG", description: "Registered 6 AI applications for monitoring.", outcome: "SUCCESS" },
     ],
   });
   console.log("4 entries");
 
   console.log(`\n  Seed complete in ${((Date.now() - started) / 1000).toFixed(1)}s`);
   console.log(`  Sign-in password for every seeded account: ${DEMO_PASSWORD}`);
-  console.log(`  Administrator: priya.r@northwind.example\n`);
+  console.log(`  Administrator: admin@defensight.example\n`);
   console.log(`  Next: npm run db:history  — replays traffic through the detection engine\n`);
 }
 

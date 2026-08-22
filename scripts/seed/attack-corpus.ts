@@ -453,7 +453,7 @@ export const BENIGN_TRICKY_DOCUMENTS: Array<{
     key: "ai-security-policy",
     title: "AI Usage Security Policy v3",
     source: "sharepoint-intranet",
-    owner: "Priya Raghunathan",
+    owner: "Admin",
     classification: "INTERNAL",
     note: "Legitimately discusses prompt injection and jailbreaks in the third person. Must not be flagged.",
     content: `AI USAGE SECURITY POLICY v3
@@ -530,7 +530,7 @@ production outside the maintenance window.`,
     key: "phishing-awareness",
     title: "Phishing Awareness — Example Messages",
     source: "sharepoint-intranet",
-    owner: "Marcus Adeyemi",
+    owner: "Analyst",
     classification: "INTERNAL",
     note: "Quotes attacker language as training examples. Quoted-attack context must be recognised.",
     content: `PHISHING AWARENESS TRAINING

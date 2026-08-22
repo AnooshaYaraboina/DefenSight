@@ -31,8 +31,8 @@ const CLEAN_DOCUMENTS: Array<{
   body: string;
 }> = [
   { title: "Employee Handbook 2026", source: "sharepoint-intranet", owner: "Aisha Kamara", classification: "INTERNAL", body: "Working arrangements, leave entitlement, code of conduct and the internal escalation path. Hybrid working requires two anchor days per week agreed with the line manager. Annual leave accrues at 2.08 days per month." },
-  { title: "Information Security Standard ISS-04", source: "sharepoint-intranet", owner: "Priya Raghunathan", classification: "INTERNAL", body: "Baseline control requirements for systems handling customer data: encryption at rest and in transit, MFA for all administrative access, quarterly access review, 90-day log retention minimum." },
-  { title: "Incident Response Plan", source: "sharepoint-intranet", owner: "Marcus Adeyemi", classification: "CONFIDENTIAL", body: "Severity definitions, on-call rotation, communication tree and regulatory notification timelines. SEV-1 requires executive notification within 30 minutes and regulator assessment within 4 hours." },
+  { title: "Information Security Standard ISS-04", source: "sharepoint-intranet", owner: "Admin", classification: "INTERNAL", body: "Baseline control requirements for systems handling customer data: encryption at rest and in transit, MFA for all administrative access, quarterly access review, 90-day log retention minimum." },
+  { title: "Incident Response Plan", source: "sharepoint-intranet", owner: "Analyst", classification: "CONFIDENTIAL", body: "Severity definitions, on-call rotation, communication tree and regulatory notification timelines. SEV-1 requires executive notification within 30 minutes and regulator assessment within 4 hours." },
   { title: "Q3 2026 Management Accounts", source: "s3-finance", owner: "Hannah Whitfield", classification: "CONFIDENTIAL", body: "Revenue of $84.2M against a budget of $81.0M. Gross margin 61.4%. Operating expenses $44.1M. EBITDA $7.6M. Cash position $112M with no drawn debt." },
   { title: "FY27 Budget Assumptions", source: "s3-finance", owner: "Hannah Whitfield", classification: "RESTRICTED", body: "Headcount plan, pricing assumptions and the sensitivity model underpinning the FY27 plan. Base case assumes 18% net revenue retention uplift and a 6% average price increase at renewal." },
   { title: "Revenue Recognition Policy", source: "s3-finance", owner: "Hannah Whitfield", classification: "INTERNAL", body: "Application of IFRS 15 to subscription, usage and professional services revenue streams, including the treatment of contract modifications and material rights." },
@@ -41,7 +41,7 @@ const CLEAN_DOCUMENTS: Array<{
   { title: "On-Call Runbook — Payments API", source: "confluence-eng", owner: "Tomás Lindqvist", classification: "INTERNAL", body: "Alert definitions, first-response steps and escalation contacts for the payments service. Elevated 5xx on the settlement endpoint escalates to the platform lead after 10 minutes." },
   { title: "Kubernetes Cluster Standards", source: "confluence-eng", owner: "Tomás Lindqvist", classification: "INTERNAL", body: "Namespace conventions, resource quotas, admission policy and the approved base image set. All workloads must declare resource limits and run as non-root." },
   { title: "Data Retention Schedule", source: "sharepoint-intranet", owner: "Grace Nakamura", classification: "INTERNAL", body: "Retention periods by data category and the legal basis for each. Transaction records 7 years, marketing consent records 3 years, application logs 90 days." },
-  { title: "Vendor Risk Assessment Framework", source: "sharepoint-intranet", owner: "Priya Raghunathan", classification: "INTERNAL", body: "Tiering criteria, due diligence depth per tier and reassessment cadence. Tier 1 vendors with production data access require annual on-site assessment." },
+  { title: "Vendor Risk Assessment Framework", source: "sharepoint-intranet", owner: "Admin", classification: "INTERNAL", body: "Tiering criteria, due diligence depth per tier and reassessment cadence. Tier 1 vendors with production data access require annual on-site assessment." },
   { title: "Master Services Agreement — Meridian Systems", source: "contract-vault", owner: "Grace Nakamura", classification: "RESTRICTED", body: "Term, service levels, liability caps, data processing terms and termination rights for the Meridian Systems integration partnership. Liability capped at 12 months of fees." },
   { title: "Data Processing Addendum Template", source: "contract-vault", owner: "Grace Nakamura", classification: "CONFIDENTIAL", body: "Standard processor obligations, sub-processor approval mechanism, international transfer safeguards and audit rights." },
   { title: "Customer Contract — Halden Bank", source: "contract-vault", owner: "Grace Nakamura", classification: "RESTRICTED", body: "Enterprise agreement covering settlement services. Includes a most-favoured-nation pricing clause and a 24-month notice period on termination for convenience." },
@@ -54,8 +54,8 @@ const CLEAN_DOCUMENTS: Array<{
   { title: "Product Roadmap H2 2026", source: "confluence-eng", owner: "Tomás Lindqvist", classification: "CONFIDENTIAL", body: "Committed, planned and exploratory work for the second half, with dependency mapping across platform, payments and reporting." },
   { title: "API Style Guide", source: "confluence-eng", owner: "Tomás Lindqvist", classification: "INTERNAL", body: "Resource naming, pagination, error envelope, versioning strategy and deprecation policy for public APIs." },
   { title: "Disaster Recovery Test Report — 2026-06", source: "confluence-eng", owner: "Tomás Lindqvist", classification: "CONFIDENTIAL", body: "Results of the June failover exercise. RTO achieved 41 minutes against a 60-minute target. RPO achieved 3 minutes against a 5-minute target. Two follow-up actions raised." },
-  { title: "Anti-Money Laundering Procedures", source: "sharepoint-intranet", owner: "Daniel Okoro", classification: "CONFIDENTIAL", body: "Customer due diligence tiers, transaction monitoring thresholds, suspicious activity reporting workflow and record-keeping obligations." },
-  { title: "Regulatory Change Log 2026", source: "sharepoint-intranet", owner: "Daniel Okoro", classification: "INTERNAL", body: "Tracked regulatory changes affecting the business, assessed impact and the remediation owner for each." },
+  { title: "Anti-Money Laundering Procedures", source: "sharepoint-intranet", owner: "Viewer", classification: "CONFIDENTIAL", body: "Customer due diligence tiers, transaction monitoring thresholds, suspicious activity reporting workflow and record-keeping obligations." },
+  { title: "Regulatory Change Log 2026", source: "sharepoint-intranet", owner: "Viewer", classification: "INTERNAL", body: "Tracked regulatory changes affecting the business, assessed impact and the remediation owner for each." },
   { title: "Board Pack — September 2026", source: "s3-finance", owner: "Hannah Whitfield", classification: "RESTRICTED", body: "Trading update, cash runway, strategic initiatives and the risk register summary presented to the board." },
   { title: "Pricing Model Documentation", source: "s3-finance", owner: "Hannah Whitfield", classification: "CONFIDENTIAL", body: "Interchange-plus construction, volume tier breakpoints and the discount approval matrix by deal size." },
   { title: "Sales Territory Plan FY27", source: "sharepoint-intranet", owner: "Victor Almeida", classification: "CONFIDENTIAL", body: "Territory definitions, quota allocation and the account assignment rules for the coming financial year." },
@@ -116,14 +116,14 @@ export async function seedKnowledge(
   };
 
   const ownerToUser: Record<string, string | undefined> = {
-    "Priya Raghunathan": users["priya.r@northwind.example"],
-    "Marcus Adeyemi": users["marcus.a@northwind.example"],
+    "Admin": users["admin@defensight.example"],
+    "Analyst": users["analyst@defensight.example"],
     "Hannah Whitfield": users["hannah.w@northwind.example"],
     "Tomás Lindqvist": users["tomas.l@northwind.example"],
     "Aisha Kamara": users["aisha.k@northwind.example"],
     "Grace Nakamura": users["grace.n@northwind.example"],
     "Omar Haddad": users["omar.h@northwind.example"],
-    "Daniel Okoro": users["daniel.o@northwind.example"],
+    "Viewer": users["viewer@defensight.example"],
     "Victor Almeida": users["victor.a@northwind.example"],
     "Elena Petrova": users["elena.p@northwind.example"],
   };
