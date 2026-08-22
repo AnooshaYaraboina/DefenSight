@@ -22,7 +22,17 @@ import {
  * absurd.
  */
 
-const REDUCED_AMPLITUDE = 0.3;
+/**
+ * How much of the performance survives prefers-reduced-motion.
+ *
+ * Not zero, and not a token gesture either. This machine has Windows
+ * animations disabled, so the preference is on by default here — at 0.3 the
+ * character read as barely alive, which is the same complaint the flat renderer
+ * drew. Half amplitude keeps every pose legible and every state distinguishable
+ * while still visibly calming the motion. Turning Windows animation effects
+ * back on gives the full performance.
+ */
+const REDUCED_AMPLITUDE = 0.55;
 
 export class Director {
   private stage: Stage;

@@ -18,10 +18,13 @@ export const metadata = { title: "Incidents" };
 export default async function IncidentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; severity?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; severity?: string; q?: string; page?: string }>;
 }) {
   const params = await searchParams;
-  const { incidents, counts } = await getIncidents(params);
+  const { incidents, counts, total, page, pageCount } = await getIncidents({
+    ...params,
+    page: params.page ? Number(params.page) : 1,
+  });
 
   const open = incidents.filter((i) => i.status === "OPEN" || i.status === "INVESTIGATING").length;
 
@@ -44,7 +47,7 @@ export default async function IncidentsPage({
       <StatusFilter
         current={params.status}
         counts={counts}
-        total={incidents.length}
+        total={total}
         className="mb-3"
       />
 
@@ -77,9 +80,9 @@ export default async function IncidentsPage({
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-[11px] text-ink-4">{incident.ref}</span>
-                        <SeverityBadge severity={incident.severity} size="xs" />
+                        <SeverityBadge severity={incident.severity} size="xs" withTooltip={false} />
                         <IncidentStatusBadge status={incident.status} size="xs" />
-                        <ThreatBadge threat={incident.threatType} size="xs" severity={incident.severity} />
+                        <ThreatBadge threat={incident.threatType} size="xs" severity={incident.severity} withTooltip={false} />
                       </div>
 
                       <h3 className="mt-1.5 truncate text-sm font-medium text-ink">
@@ -121,6 +124,68 @@ export default async function IncidentsPage({
           ))}
         </ul>
       )}
+
+      {pageCount > 1 && (
+        <nav
+          className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-3"
+          aria-label="Incident pages"
+        >
+          <p className="font-mono text-[11px] text-ink-4">
+            {(page - 1) * 25 + 1}&ndash;{Math.min(page * 25, total)} of {total}
+          </p>
+          <div className="flex items-center gap-2">
+            <PageLink params={params} page={page - 1} disabled={page <= 1}>
+              Previous
+            </PageLink>
+            <span className="font-mono text-[11px] tabular text-ink-3">
+              {page} / {pageCount}
+            </span>
+            <PageLink params={params} page={page + 1} disabled={page >= pageCount}>
+              Next
+            </PageLink>
+          </div>
+        </nav>
+      )}
     </>
+  );
+}
+
+/**
+ * A page link that preserves the current filters.
+ *
+ * Every filter on this screen lives in the URL so a view can be shared as a
+ * link; paging has to keep that property rather than dropping back to page one
+ * of everything.
+ */
+function PageLink({
+  params,
+  page,
+  disabled,
+  children,
+}: {
+  params: Record<string, string | undefined>;
+  page: number;
+  disabled: boolean;
+  children: React.ReactNode;
+}) {
+  if (disabled) {
+    return (
+      <span className="rounded-md border border-line px-2.5 py-1 text-[11px] text-ink-4">
+        {children}
+      </span>
+    );
+  }
+  const next = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v && k !== "page") next.set(k, v);
+  }
+  next.set("page", String(page));
+  return (
+    <Link
+      href={`/incidents?${next.toString()}`}
+      className="rounded-md border border-line-strong px-2.5 py-1 text-[11px] text-ink-2 transition-colors hover:border-brand/50 hover:text-ink"
+    >
+      {children}
+    </Link>
   );
 }

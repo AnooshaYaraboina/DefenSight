@@ -4,7 +4,21 @@ import { jsonArray } from "@/lib/db/json";
 import type { IncidentStatus, Severity, ThreatType } from "@/lib/engine/taxonomy";
 import type { StageTrace } from "@/lib/engine/types";
 
-export async function getIncidents(filters: { status?: string; severity?: string; q?: string } = {}) {
+/**
+ * One page of incidents.
+ *
+ * This used to fetch every case with no limit, each carrying its full attack
+ * chain and three tooltip-wrapped badges. At 79 incidents that was 1.3MB of
+ * HTML and three and a half seconds — twelve times the dashboard's payload, for
+ * a list nobody reads past the first screen of. The query itself was never the
+ * problem; it runs in eighteen milliseconds. The cost was rendering all of it.
+ */
+const PAGE_SIZE = 25;
+
+export async function getIncidents(
+  filters: { status?: string; severity?: string; q?: string; page?: number } = {},
+) {
+  const page = Math.max(1, filters.page ?? 1);
   const where: Record<string, unknown> = {};
   if (filters.status) where.status = filters.status;
   if (filters.severity) where.severity = filters.severity;
@@ -16,18 +30,22 @@ export async function getIncidents(filters: { status?: string; severity?: string
     ];
   }
 
-  const incidents = await prisma.incident.findMany({
-    where,
-    orderBy: [{ status: "asc" }, { openedAt: "desc" }],
-    include: {
-      application: { select: { name: true, slug: true } },
-      agent: { select: { name: true, slug: true } },
-      assignedTo: { select: { name: true } },
-      _count: { select: { events: true, timeline: true } },
-    },
-  });
-
-  const counts = await prisma.incident.groupBy({ by: ["status"], _count: true });
+  const [incidents, total, counts] = await Promise.all([
+    prisma.incident.findMany({
+      where,
+      orderBy: [{ status: "asc" }, { openedAt: "desc" }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        application: { select: { name: true, slug: true } },
+        agent: { select: { name: true, slug: true } },
+        assignedTo: { select: { name: true } },
+        _count: { select: { events: true, timeline: true } },
+      },
+    }),
+    prisma.incident.count({ where }),
+    prisma.incident.groupBy({ by: ["status"], _count: true }),
+  ]);
 
   return {
     incidents: incidents.map((i) => ({
@@ -38,6 +56,9 @@ export async function getIncidents(filters: { status?: string; severity?: string
       threatType: i.threatType as ThreatType,
     })),
     counts: Object.fromEntries(counts.map((c) => [c.status, c._count])) as Record<string, number>,
+    total,
+    page,
+    pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),
   };
 }
 
