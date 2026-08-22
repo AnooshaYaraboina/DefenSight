@@ -13,7 +13,11 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createClient() {
-  const url = process.env.DATABASE_URL ?? "file:./prisma/defensight.db";
+  // Must match the default in prisma.config.ts. These disagreed — the CLI
+  // seeded ./defensight.db while this pointed at ./prisma/defensight.db — so
+  // any script importing this client outside Next silently opened an empty
+  // database and reported missing tables while the running app was fine.
+  const url = process.env.DATABASE_URL ?? "file:./defensight.db";
   const adapter = new PrismaBetterSqlite3({ url });
   return new PrismaClient({
     adapter,

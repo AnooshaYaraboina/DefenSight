@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/rbac/session";
+import { apiError } from "@/lib/api/respond";
+import { requireApiUser } from "@/lib/rbac/session";
 import { can } from "@/lib/rbac/permissions";
 import { planFor, runStep, type WorkflowId } from "@/lib/assistant/workflows";
 
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await requireApiUser();
 
     const body = (await request.json()) as {
       action: "plan" | "step";
@@ -60,9 +61,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Workflow failed" },
-      { status: 500 },
-    );
+    return apiError(error, "Workflow failed");
   }
 }

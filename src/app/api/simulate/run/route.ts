@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ingest } from "@/lib/runtime/ingest";
 import { scenarioByKey } from "@/lib/simulator/scenarios";
-import { getCurrentUser } from "@/lib/rbac/session";
-import { assertCan, ForbiddenError } from "@/lib/rbac/permissions";
+import { apiError } from "@/lib/api/respond";
+import { requireApiUser } from "@/lib/rbac/session";
+import { assertCan } from "@/lib/rbac/permissions";
 import { SEVERITY_RANK } from "@/lib/engine/taxonomy";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export const runtime = "nodejs";
  */
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await requireApiUser();
     assertCan(user.role, "simulator:run");
 
     const { scenarioKey } = (await request.json()) as { scenarioKey: string };
@@ -146,12 +147,6 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    if (error instanceof ForbiddenError) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Simulation failed" },
-      { status: 500 },
-    );
+    return apiError(error, "Simulation failed");
   }
 }

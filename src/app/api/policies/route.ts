@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/rbac/session";
-import { assertCan, ForbiddenError } from "@/lib/rbac/permissions";
+import { apiError } from "@/lib/api/respond";
+import { requireApiUser } from "@/lib/rbac/session";
+import { assertCan } from "@/lib/rbac/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
  */
 export async function PATCH(request: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await requireApiUser();
     assertCan(user.role, "policies:write");
 
     const body = (await request.json()) as {
@@ -61,12 +62,6 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ policy: updated });
   } catch (error) {
-    if (error instanceof ForbiddenError) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Update failed" },
-      { status: 500 },
-    );
+    return apiError(error, "Update failed");
   }
 }

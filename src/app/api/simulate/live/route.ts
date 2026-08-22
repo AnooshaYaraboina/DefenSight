@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/rbac/session";
-import { assertCan, ForbiddenError } from "@/lib/rbac/permissions";
+import { apiError } from "@/lib/api/respond";
+import { requireApiUser } from "@/lib/rbac/session";
+import { assertCan } from "@/lib/rbac/permissions";
 import { emitBurst, getLiveStatus, startLiveTraffic, stopLiveTraffic } from "@/lib/runtime/live-traffic";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,7 @@ export const runtime = "nodejs";
 /** Controls the estate traffic generator that feeds the live monitor. */
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await requireApiUser();
     assertCan(user.role, "simulator:run");
 
     const body = (await request.json().catch(() => ({}))) as {
@@ -32,13 +33,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
   } catch (error) {
-    if (error instanceof ForbiddenError) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Request failed" },
-      { status: 500 },
-    );
+    return apiError(error, "Request failed");
   }
 }
 

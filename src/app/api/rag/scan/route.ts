@@ -3,8 +3,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { asJson } from "@/lib/db/json";
 import { scanDocument } from "@/lib/engine";
-import { getCurrentUser } from "@/lib/rbac/session";
-import { assertCan, ForbiddenError } from "@/lib/rbac/permissions";
+import { apiError } from "@/lib/api/respond";
+import { requireApiUser } from "@/lib/rbac/session";
+import { assertCan } from "@/lib/rbac/permissions";
 import { bus } from "@/lib/realtime/bus";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export const runtime = "nodejs";
 /** Ingest a document and run it through the real scanner (§11). */
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await requireApiUser();
     assertCan(user.role, "documents:upload");
 
     const body = (await request.json()) as {
@@ -23,11 +24,24 @@ export async function POST(request: Request) {
       classification?: string;
     };
 
+    // The combined guard stays as one condition so the fields narrow to string
+    // for the rest of the handler; only the message is built from what is
+    // actually absent. Whitespace-only content used to report "title, content
+    // and data source are required" with two of the three plainly filled in,
+    // which sent people looking at the wrong input.
     if (!body.title?.trim() || !body.content?.trim() || !body.sourceId) {
-      return NextResponse.json(
-        { error: "Title, content and data source are required." },
-        { status: 400 },
-      );
+      const missing = [
+        !body.title?.trim() && "a title",
+        !body.content?.trim() && "content to scan",
+        !body.sourceId && "a data source",
+      ].filter((v): v is string => typeof v === "string");
+
+      const list =
+        missing.length > 1
+          ? `${missing.slice(0, -1).join(", ")} and ${missing[missing.length - 1]}`
+          : missing[0];
+
+      return NextResponse.json({ error: `This scan needs ${list}.` }, { status: 400 });
     }
 
     const source = await prisma.dataSource.findUnique({ where: { id: body.sourceId } });
@@ -145,12 +159,6 @@ export async function POST(request: Request) {
       })),
     });
   } catch (error) {
-    if (error instanceof ForbiddenError) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Scan failed" },
-      { status: 500 },
-    );
+    return apiError(error, "Scan failed");
   }
 }

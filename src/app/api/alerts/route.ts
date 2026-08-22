@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/rbac/session";
-import { assertCan, ForbiddenError } from "@/lib/rbac/permissions";
+import { apiError } from "@/lib/api/respond";
+import { requireApiUser } from "@/lib/rbac/session";
+import { assertCan } from "@/lib/rbac/permissions";
 
 export const dynamic = "force-dynamic";
 
 /** Acknowledge one alert, or every unacknowledged alert (§24). */
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await requireApiUser();
     assertCan(user.role, "alerts:acknowledge");
 
     const { alertId, all } = (await request.json()) as { alertId?: string; all?: boolean };
@@ -53,12 +54,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ acknowledged: 1 });
   } catch (error) {
-    if (error instanceof ForbiddenError) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Acknowledge failed" },
-      { status: 500 },
-    );
+    return apiError(error, "Acknowledge failed");
   }
 }

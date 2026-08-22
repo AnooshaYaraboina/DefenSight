@@ -30,3 +30,27 @@ export async function getCurrentUser(): Promise<SessionUser> {
 export async function getCurrentUserOrNull(): Promise<SessionUser | null> {
   return readSession();
 }
+
+/**
+ * Raised when an API route is reached without a valid session.
+ *
+ * Route handlers must not use `getCurrentUser` for this: `redirect()` throws a
+ * NEXT_REDIRECT signal, and a route that wraps its body in try/catch swallows
+ * that signal and reports it as a 500 with the framework's internal marker as
+ * the error message. A caller then cannot tell "you are not signed in" from
+ * "the server broke". This is the typed equivalent, mapped to 401 by
+ * `apiError`.
+ */
+export class UnauthorizedError extends Error {
+  constructor() {
+    super("Not signed in.");
+    this.name = "UnauthorizedError";
+  }
+}
+
+/** The acting user for an API route. Throws rather than redirecting. */
+export async function requireApiUser(): Promise<SessionUser> {
+  const user = await readSession();
+  if (!user) throw new UnauthorizedError();
+  return user;
+}
