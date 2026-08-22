@@ -1,0 +1,28 @@
+# DefenSight — local container stack.
+#
+# SESSION_SECRET and OPENAI_API_KEY are read from the repo's .env, which Compose
+# loads automatically for substitution. DATABASE_URL is deliberately *not* taken
+# from .env: that value is a host-relative path, while the container keeps its
+# database on the `defensight-data` volume.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: defensight:local
+    container_name: defensight
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "file:/app/data/defensight.db"
+      SESSION_SECRET: "${SESSION_SECRET:?set SESSION_SECRET in .env}"
+      # Every AI feature has a deterministic fallback when this is empty.
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+    volumes:
+      - defensight-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  defensight-data:

@@ -1,0 +1,27 @@
+# Build context exclusions — keep the image build fast and hermetic.
+node_modules
+.next
+.git
+.github
+
+# Local-only env; the container gets its config from compose.
+.env
+.env.*
+
+# Build artifacts and caches
+*.tsbuildinfo
+out
+build
+coverage
+.vercel
+.defensight
+
+# Generated at install time by `prisma generate`
+src/generated
+
+# Editor / OS noise
+.DS_Store
+*.log
+Dockerfile
+.dockerignore
+compose.yaml
