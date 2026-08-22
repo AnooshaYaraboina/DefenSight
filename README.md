@@ -81,8 +81,8 @@ the platform is fully functional without one.
 
 | | |
 |---|---|
-| False positives | **0%** across 616 benign requests |
-| Detection rate | **92.3%** across 104 attacks |
+| False positives | **0%** — `npm run bench`, 44 labelled benign prompts |
+| Detection rate | **100%** — `npm run bench`, 18 labelled attack patterns |
 | Simulator | **8/8** scenarios defended |
 | Test matrix | **19/19** cases passing |
 | Unit suite | **83** tests |
@@ -123,6 +123,7 @@ the security.
 | [Threat Model](docs/threat-model.md) | 23 threats mapped to OWASP LLM Top 10 and MITRE ATLAS, with residual risk |
 | [Security Design](docs/security-design.md) | Detection, guardrails, risk, RAG, agent, tool, data, incident response |
 | [Test Cases](docs/test-cases.md) | Generated from real runs — regenerate with `npm run docs:tests` |
+| Benchmark | `npm run bench` — detection and false-positive rates measured live, exits non-zero on regression |
 
 ## Commands
 
@@ -130,6 +131,7 @@ the security.
 npm run dev          # development server
 npm run build        # production build
 npm test             # 83 unit and integration tests
+npm run bench        # measure detection and false-positive rates
 npm run setup        # migrate + seed + replay history
 npm run db:seed      # estate only
 npm run db:history   # replay traffic through the real pipeline

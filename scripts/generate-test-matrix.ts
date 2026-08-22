@@ -170,12 +170,16 @@ framework involved.
 
 ## 5. Measured false-positive rate
 
-Historical replay of 720 requests through the production pipeline:
+These figures are measured, not recorded here. \`npm run bench\` runs every
+labelled pattern in \`scripts/traffic.ts\` through the production pipeline and
+prints detection and false-positive rates, naming any attack that was not
+actioned and any threat type that fires on legitimate traffic. It exits
+non-zero when either threshold is breached, so a regression fails rather than
+leaving a stale number in a document.
 
-| Traffic | Volume | Actioned | Rate |
-|---|---|---|---|
-| Benign | 616 | 0 blocked | **0.0% false positives** |
-| Attack | 104 | 96 actioned | **92.3% detection** |
+The figures previously written here were literal text: nothing recomputed
+them, and they could not be recomputed afterwards either, because the replay
+discards its own ground-truth label before the row is written.
 `);
 
   writeFileSync("docs/test-cases.md", rows.join("\n"));
