@@ -5,8 +5,8 @@ import {
 } from "lucide-react";
 import { getLandingStats } from "@/lib/queries/landing";
 import { Logo, Wordmark } from "@/components/layout/logo";
-import { PipelineAnimation } from "@/components/landing/pipeline-animation";
-import { ThreatRadar } from "@/components/landing/threat-radar";
+import { Constellation } from "@/components/landing/constellation";
+import { Globe, type GlobeNode } from "@/components/landing/globe";
 import { Counter } from "@/components/landing/counter";
 import { Button } from "@/components/ui/button";
 import { THREAT_TYPES, THREAT_META } from "@/lib/engine/taxonomy";
@@ -39,11 +39,35 @@ const CAPABILITIES = [
 export default async function LandingPage() {
   const stats = await getLandingStats();
 
-  const radarContacts = stats.topThreats.slice(0, 6).map((t, i) => ({
-    label: t.label,
-    count: t.count,
-    severity: (i < 2 ? "critical" : i < 4 ? "high" : "medium") as "critical" | "high" | "medium",
-  }));
+  /*
+   * The globe's lit nodes carry real detections from this deployment — the top
+   * threat families and how many of each were caught here — so hovering one
+   * reports a measured fact rather than decorative copy. Positions and colours
+   * are fixed; only the labels are data-driven.
+   *
+   * Longitudes deliberately span the full circle (-160 through 130) and the
+   * latitudes alternate hemispheres. An earlier set sat inside a 92-degree
+   * window, which put every mark on one face and left the opposite side of
+   * the globe bare through half of each rotation.
+   */
+  const NODE_SLOTS: { lat: number; lon: number; color: string }[] = [
+    { lat: 52, lon: -160, color: "#22d3ee" },
+    { lat: 10, lon: -88, color: "#f59e0b" },
+    { lat: -38, lon: -16, color: "#6366f1" },
+    { lat: 34, lon: 56, color: "#c026d3" },
+    { lat: -18, lon: 130, color: "#10b981" },
+  ];
+  const globeNodes: GlobeNode[] = NODE_SLOTS.map((slot, i) => {
+    const threat = stats.topThreats[i];
+    return {
+      ...slot,
+      label: threat?.label ?? "Monitored",
+      detail: threat
+        ? `${threat.count} detected here${threat.owasp ? ` · OWASP ${threat.owasp}` : ""}`
+        : "No detections in this window",
+    };
+  });
+
 
   const marqueeThreats = THREAT_TYPES.map((t) => THREAT_META[t].label);
 
@@ -80,105 +104,136 @@ export default async function LandingPage() {
       </div>
 
       {/* ================================================================= nav */}
-      <header className="sticky top-0 z-30 border-b border-line/60 backdrop-blur-xl">
-        <div
-          className="absolute inset-0 -z-10"
-          style={{ background: "color-mix(in oklab, var(--color-base) 78%, transparent)" }}
-        />
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
-          <div className="flex items-center gap-2.5">
-            <Logo size={26} />
+      {/* Floating segmented bar: one bordered rail divided by hairlines, rather
+          than a full-width sticky header. */}
+      <header className="relative z-30 px-4 pt-4">
+        <div className="mx-auto flex max-w-[76rem] items-stretch border border-line/70 bg-surface/40 backdrop-blur-xl">
+          <div className="flex items-center gap-3 border-r border-line/70 px-5 py-4">
+            <Logo size={40} />
             <Wordmark className="text-[17px]" />
-            <span className="ml-1.5 hidden rounded-full border border-brand/25 bg-brand-dim/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-brand sm:block">
-              Defensive Layer
-            </span>
           </div>
-          <nav className="flex items-center gap-1">
-            <Link href="#threat" className="hidden rounded-md px-3 py-1.5 text-xs text-ink-3 transition-colors hover:text-ink md:block">
-              The threat
-            </Link>
-            <Link href="#how" className="hidden rounded-md px-3 py-1.5 text-xs text-ink-3 transition-colors hover:text-ink md:block">
-              How it works
-            </Link>
-            <Link href="#capabilities" className="hidden rounded-md px-3 py-1.5 text-xs text-ink-3 transition-colors hover:text-ink md:block">
-              Capabilities
-            </Link>
-            <Button size="sm" className="ml-2 ds-glow" asChild>
-              <Link href="/dashboard">
-                Open console
-                <ArrowRight />
+
+          <div className="hidden items-center border-r border-line/70 px-4 lg:flex">
+            <span className="ds-live-dot size-1.5 rounded-full bg-allow text-allow/40" />
+          </div>
+
+          <nav className="hidden flex-1 items-center justify-center gap-9 px-6 md:flex">
+            {[
+              ["The threat", "#threat"],
+              ["How it works", "#how"],
+              ["Capabilities", "#capabilities"],
+            ].map(([label, href]) => (
+              <Link
+                key={href}
+                href={href}
+                className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-3 transition-colors hover:text-ink"
+              >
+                {label}
               </Link>
-            </Button>
+            ))}
           </nav>
+
+          <Link
+            href="/dashboard"
+            className="ml-auto flex items-center gap-2 border-l border-line/70 px-6 py-4 font-mono text-[11px] uppercase tracking-[0.18em] text-brand transition-colors hover:bg-brand-dim/30 md:ml-0"
+          >
+            <span className="size-1 rounded-full bg-brand" />
+            Open console
+            <span className="size-1 rounded-full bg-brand" />
+          </Link>
         </div>
       </header>
 
       {/* ================================================================ hero */}
-      <section className="relative z-10 mx-auto max-w-6xl px-5 pb-20 pt-14 lg:pb-28 lg:pt-24">
-        <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-          <div className="min-w-0">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-dim/25 py-1 pl-1 pr-3 backdrop-blur">
-              <span className="flex size-5 items-center justify-center rounded-full bg-brand/20">
-                <span className="ds-live-dot size-1.5 rounded-full bg-brand text-brand/40" />
-              </span>
-              <span className="text-[11px] font-medium text-brand">
-                {stats.events.toLocaleString()} requests analysed · {stats.blocked} attacks stopped
-              </span>
-            </div>
+      <section className="relative z-10 min-h-[calc(100dvh-6rem)] overflow-hidden">
+        <Constellation className="opacity-90" />
 
-            <h1 className="text-balance text-[2.6rem] font-semibold leading-[1.04] tracking-[-0.025em] sm:text-[3.4rem] lg:text-[4.1rem]">
-              <span className="ds-gradient-text block">Your AI can be</span>
-              <span className="ds-gradient-text block">talked into things.</span>
+        {/* Centre rule, as in the reference — a single hairline dividing the
+            statement from the object it describes. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-1/2 hidden w-px bg-gradient-to-b from-transparent via-line-strong/60 to-transparent lg:block"
+        />
+
+        <div className="relative mx-auto grid h-full max-w-[76rem] items-start gap-10 px-6 pb-20 pt-8 lg:grid-cols-2 lg:pt-10">
+          {/* ------------------------------------------------------ statement */}
+          <div className="min-w-0">
+            <h1 className="text-[2.9rem] font-semibold leading-[1.04] tracking-[-0.03em] sm:text-[3.6rem] lg:text-[4.1rem]">
+              <span className="block text-ink">Your AI can be</span>
+              <span className="block text-ink">talked into things.</span>
               <span className="mt-1 block text-ink-3">DefenSight stops it.</span>
             </h1>
 
-            <p className="mt-7 max-w-xl text-pretty text-[15px] leading-relaxed text-ink-2">
-              An attacker no longer needs your credentials. They need a paragraph inside a
-              document your assistant will read. DefenSight sits between your AI estate and
-              everything it touches — monitoring every request, detecting manipulation,
-              authorising every tool call, and showing analysts exactly where the attack died.
-            </p>
-
-            <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Button size="lg" className="ds-glow" asChild>
-                <Link href="/dashboard">
-                  Open the console
-                  <ArrowRight />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/simulator">
-                  <Crosshair />
-                  Run an attack simulation
-                </Link>
-              </Button>
+            {/* Supporting copy sits right-aligned against the centre rule. */}
+            <div className="mt-10 flex justify-end">
+              <div className="max-w-md text-right">
+                <p className="text-[15px] leading-relaxed text-ink-2">
+                  An attacker no longer needs your credentials. They need a paragraph inside a
+                  document your assistant will read. DefenSight sits between your AI estate and
+                  everything it touches — monitoring every request, detecting manipulation,
+                  authorising every tool call, and showing analysts exactly where the attack died.
+                </p>
+              </div>
             </div>
 
-            <dl className="mt-12 grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
-              <HeroStat label="Requests analysed" value={stats.events} />
-              <HeroStat label="Threats detected" value={stats.detections} />
-              <HeroStat label="Attacks blocked" value={stats.blocked} tone="critical" />
-              <HeroStat label="Median analysis" value={stats.medianLatency} suffix="ms" tone="brand" />
-            </dl>
-            <p className="mt-4 flex items-center gap-1.5 text-[11px] text-ink-4">
-              <Zap className="size-3 text-brand" />
-              Live figures from this deployment — not illustrative numbers.
-            </p>
+            {/* Letterspaced keyword row, dot-separated. */}
+            <div className="mt-9 flex flex-wrap items-center justify-end gap-x-5 gap-y-2 font-mono text-[11px] uppercase tracking-[0.28em] text-ink-3">
+              <span>Monitor</span>
+              <span aria-hidden="true" className="size-1 rounded-full bg-ink-4/70" />
+              <span>Detect</span>
+              <span aria-hidden="true" className="size-1 rounded-full bg-ink-4/70" />
+              <span>Authorise</span>
+            </div>
+
+            <div className="mt-11 flex flex-wrap gap-4">
+              <Link
+                href="/dashboard"
+                className="group flex items-center gap-4 border border-brand bg-brand px-8 py-5 font-mono text-[12px] font-semibold uppercase tracking-[0.2em] text-brand-ink shadow-[0_0_28px_-8px_var(--color-brand)] transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:bg-brand-2 hover:shadow-[0_0_40px_-8px_var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70 focus-visible:ring-offset-2 focus-visible:ring-offset-base"
+              >
+                Open the console
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+              <Link
+                href="/simulator"
+                className="group flex items-center gap-4 border border-brand/55 bg-brand-dim/30 px-8 py-5 font-mono text-[12px] uppercase tracking-[0.2em] text-ink transition-[background-color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-brand hover:bg-brand-dim/60 hover:shadow-[0_0_28px_-10px_var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/70 focus-visible:ring-offset-2 focus-visible:ring-offset-base"
+              >
+                Run an attack simulation
+                <Crosshair className="size-4 text-brand transition-transform group-hover:rotate-90" />
+              </Link>
+            </div>
           </div>
 
-          {/* Radar + pipeline, stacked */}
-          <div className="relative flex min-w-0 flex-col items-center gap-5">
-            <div className="ds-float relative">
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 -z-10 blur-[60px]"
-                style={{ background: "radial-gradient(circle, color-mix(in oklab, var(--color-brand) 40%, transparent) 0%, transparent 65%)" }}
-              />
-              <ThreatRadar contacts={radarContacts} size={330} />
+          {/* ---------------------------------------------------------- globe */}
+          <div className="relative flex min-w-0 items-center justify-center">
+            <div className="relative aspect-square w-full max-w-[34rem]">
+              <Globe nodes={globeNodes} />
             </div>
-            <PipelineAnimation className="w-full max-w-md" />
+            <span className="absolute bottom-2 right-2 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-4">
+              {stats.events.toLocaleString()} analysed · {stats.blocked} stopped
+            </span>
           </div>
         </div>
+
+        {/* -------------------------------------------------------- scroll cue */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
+          <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-ink-4">
+            Scroll
+          </span>
+        </div>
+      </section>
+
+      {/* ============================================================== figures */}
+      <section className="relative z-10 mx-auto max-w-[76rem] px-6 pb-20">
+        <dl className="grid grid-cols-2 gap-px border border-line/70 bg-line/70 sm:grid-cols-4">
+          <HeroStat label="Requests analysed" value={stats.events} />
+          <HeroStat label="Threats detected" value={stats.detections} />
+          <HeroStat label="Attacks blocked" value={stats.blocked} tone="critical" />
+          <HeroStat label="Median analysis" value={stats.medianLatency} suffix="ms" tone="brand" />
+        </dl>
+        <p className="mt-4 flex items-center gap-1.5 text-[11px] text-ink-4">
+          <Zap className="size-3 text-brand" />
+          Live figures from this deployment — not illustrative numbers.
+        </p>
       </section>
 
       {/* =========================================================== marquee */}
@@ -407,7 +462,7 @@ export default async function LandingPage() {
       <footer className="relative z-10 border-t border-line/70">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-8">
           <div className="flex items-center gap-2.5">
-            <Logo size={20} />
+            <Logo size={30} />
             <span className="text-[11px] text-ink-4">
               DefenSight — AI Security Defense &amp; Monitoring
             </span>
@@ -440,11 +495,13 @@ function HeroStat({
   const toneClass =
     tone === "critical" ? "text-critical" : tone === "brand" ? "text-brand" : "text-ink";
   return (
-    <div>
-      <dd className={`font-mono text-[1.75rem] font-semibold leading-none ${toneClass}`}>
+    <div className="bg-base px-6 py-7">
+      <dd className={`font-mono text-[1.9rem] font-semibold leading-none tabular ${toneClass}`}>
         <Counter value={value} suffix={suffix} />
       </dd>
-      <dt className="mt-2 text-[11px] leading-snug text-ink-4">{label}</dt>
+      <dt className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-4">
+        {label}
+      </dt>
     </div>
   );
 }
